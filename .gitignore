@@ -1,0 +1,30 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.egg-info/
+backend/venv/
+backend/.env
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/*
+!backend/media/.gitkeep
+
+# Node / Vite
+node_modules/
+frontend/dist/
+*.local
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Logs
+*.log
+
+# MongoDB VS Code playground scratch files (unrelated to this project)
+*.mongodb.js
+
+# Claude Code local settings
+.claude/settings.local.json

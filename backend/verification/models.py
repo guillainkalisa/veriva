@@ -3,6 +3,7 @@ from django.utils import timezone
 from accounts.models import CustomUser
 from students.models import Student
 from devices.models import Device
+from campus.models import Directorate
 
 
 class IncidentReport(models.Model):
@@ -45,6 +46,9 @@ class IncidentReport(models.Model):
         Device, on_delete=models.SET_NULL, null=True, blank=True, related_name='incidents'
     )
     location = models.CharField(max_length=200, blank=True)
+    handling_directorate = models.ForeignKey(
+        Directorate, on_delete=models.SET_NULL, null=True, blank=True, related_name='incidents'
+    )
     is_resolved = models.BooleanField(default=False)
     resolution_notes = models.TextField(blank=True)
     resolved_by = models.ForeignKey(

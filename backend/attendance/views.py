@@ -1,4 +1,4 @@
-from rest_framework import status, generics, permissions
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -6,7 +6,9 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.utils import timezone
-from accounts.permissions import IsAdmin, IsAdminOrLecturer, IsAdminOrSecurity, IsAdminOrLecturerOrReadOnly
+from accounts.permissions import (
+    IsStaff, IsAdminOrLecturer, IsAdminOrSecurity, IsAdminOrLecturerOrReadOnly,
+)
 
 from .models import Course, AttendanceSession, AttendanceRecord, CampusEntry
 from .serializers import (
@@ -14,7 +16,8 @@ from .serializers import (
     AttendanceRecordSerializer, NFCAttendanceSerializer,
     CampusEntrySerializer, NFCCampusEntrySerializer
 )
-from students.models import NFCCard, Student
+from students.models import NFCCard
+from students.serializers import StudentSerializer
 
 
 class CourseViewSet(ModelViewSet):
@@ -64,6 +67,7 @@ class AttendanceRecordViewSet(ModelViewSet):
 
 class NFCAttendanceView(APIView):
     """Record attendance via NFC card tap."""
+    permission_classes = [IsAdminOrLecturer]
 
     def post(self, request):
         serializer = NFCAttendanceSerializer(data=request.data)
@@ -122,6 +126,7 @@ class CampusEntryViewSet(ModelViewSet):
 
 class NFCCampusEntryView(APIView):
     """Record campus entry via NFC card tap."""
+    permission_classes = [IsAdminOrSecurity]
 
     def post(self, request):
         serializer = NFCCampusEntrySerializer(data=request.data)
@@ -131,47 +136,44 @@ class NFCCampusEntryView(APIView):
         gate = serializer.validated_data.get('gate', 'Main Gate')
 
         try:
-            card = NFCCard.objects.select_related('student').get(uid=uid)
+            card = NFCCard.objects.select_related(
+                'student', 'student__college', 'student__school',
+                'student__department', 'student__program',
+            ).get(uid=uid)
         except NFCCard.DoesNotExist:
             return Response({'detail': 'NFC card not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if not card.is_active:
             return Response({'detail': 'NFC card is not active.', 'status': card.status}, status=status.HTTP_403_FORBIDDEN)
 
-        last_entry = CampusEntry.objects.filter(
+        open_entry = CampusEntry.objects.filter(
             student=card.student, status=CampusEntry.STATUS_ENTERED
         ).first()
 
-        if last_entry:
-            last_entry.exit_time = timezone.now()
-            last_entry.status = CampusEntry.STATUS_EXITED
-            last_entry.save()
-            action = 'exit'
+        if open_entry:
+            open_entry.exit_time = timezone.now()
+            open_entry.status = CampusEntry.STATUS_EXITED
+            open_entry.save()
+            entry, action = open_entry, 'exit'
         else:
-            last_entry = CampusEntry.objects.create(
-                student=card.student,
-                nfc_card=card,
-                gate=gate,
-                status=CampusEntry.STATUS_ENTERED
+            entry = CampusEntry.objects.create(
+                student=card.student, nfc_card=card, gate=gate,
+                status=CampusEntry.STATUS_ENTERED,
             )
             action = 'entry'
 
         return Response({
             'action': action,
-            'student': {
-                'full_name': card.student.full_name,
-                'registration_number': card.student.registration_number,
-                'college': card.student.college,
-            },
-            'entry': CampusEntrySerializer(last_entry).data,
-        }, status=status.HTTP_200_OK)
+            'student': StudentSerializer(card.student, context={'request': request}).data,
+            'entry': CampusEntrySerializer(entry).data,
+        })
 
 
 class AttendanceSummaryView(APIView):
     """Attendance statistics for dashboard."""
+    permission_classes = [IsStaff]
 
     def get(self, request):
-        from django.db.models import Count
         today = timezone.localdate()
 
         return Response({

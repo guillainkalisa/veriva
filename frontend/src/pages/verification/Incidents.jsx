@@ -6,6 +6,7 @@ import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
 import { getIncidents, createIncident, resolveIncident } from '../../api/verification'
 import { getStudents } from '../../api/students'
+import { getDirectorates } from '../../api/campus'
 import { useRole } from '../../hooks/useRole'
 
 const TYPES = [
@@ -21,6 +22,7 @@ export default function Incidents() {
   const { canResolveIncidents } = useRole()
   const [incidents, setIncidents] = useState([])
   const [students, setStudents] = useState([])
+  const [directorates, setDirectorates] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showResolve, setShowResolve] = useState(false)
@@ -28,15 +30,17 @@ export default function Incidents() {
   const [filter, setFilter] = useState('')
   const [resolveNotes, setResolveNotes] = useState('')
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ type: '', severity: 'medium', description: '', involved_student: '', location: '' })
+  const emptyForm = { type: '', severity: 'medium', description: '', involved_student: '', location: '', handling_directorate: '' }
+  const [form, setForm] = useState(emptyForm)
 
   const load = useCallback(() => {
     setLoading(true)
     const params = filter ? { is_resolved: filter === 'resolved' } : {}
-    Promise.all([getIncidents(params), getStudents({ page_size: 200 })])
-      .then(([{ data: i }, { data: s }]) => {
+    Promise.all([getIncidents(params), getStudents({ page_size: 200 }), getDirectorates()])
+      .then(([{ data: i }, { data: s }, { data: d }]) => {
         setIncidents(i.results)
         setStudents(s.results)
+        setDirectorates(d)
       })
       .finally(() => setLoading(false))
   }, [filter])
@@ -49,6 +53,7 @@ export default function Incidents() {
     try {
       const payload = { ...form }
       if (!payload.involved_student) delete payload.involved_student
+      if (!payload.handling_directorate) delete payload.handling_directorate
       await createIncident(payload)
       toast.success('Incident reported.')
       setShowForm(false)
@@ -76,7 +81,7 @@ export default function Incidents() {
       <PageHeader
         title="Incident Reports"
         action={
-          <button className="btn-primary" onClick={() => { setForm({ type: '', severity: 'medium', description: '', involved_student: '', location: '' }); setShowForm(true) }}>
+          <button className="btn-primary" onClick={() => { setForm(emptyForm); setShowForm(true) }}>
             <Plus size={16} /> Report Incident
           </button>
         }
@@ -116,6 +121,7 @@ export default function Incidents() {
                     <p className="text-xs text-gray-400 mt-1">
                       {inc.involved_student_detail && `Student: ${inc.involved_student_detail.full_name} · `}
                       {inc.location && `Location: ${inc.location} · `}
+                      {inc.handling_directorate_name && `${inc.handling_directorate_name} · `}
                       Reported by {inc.reported_by_name} · {new Date(inc.created_at).toLocaleString()}
                     </p>
                   </div>
@@ -169,6 +175,13 @@ export default function Incidents() {
               <label className="label">Location</label>
               <input className="input" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Main Gate, Block A" />
             </div>
+          </div>
+          <div>
+            <label className="label">Handling Directorate</label>
+            <select className="input" value={form.handling_directorate} onChange={(e) => setForm({ ...form, handling_directorate: e.target.value })}>
+              <option value="">Unassigned</option>
+              {directorates.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
           </div>
           <button type="submit" disabled={saving} className="btn-danger w-full justify-center">
             <ShieldAlert size={15} /> {saving ? 'Reporting...' : 'Submit Incident Report'}

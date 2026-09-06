@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import Layout from './components/Layout'
+import AccessDenied from './components/AccessDenied'
 import Login from './pages/auth/Login'
 import Dashboard from './pages/dashboard/Dashboard'
 import Students from './pages/students/Students'
@@ -11,10 +12,21 @@ import Courses from './pages/courses/Courses'
 import Incidents from './pages/verification/Incidents'
 import VerifyDevice from './pages/verification/VerifyDevice'
 import NFCStation from './pages/nfc/NFCStation'
+import { NAV } from './nav'
 
-function PrivateRoute({ children, roles }) {
-  const { user, loading } = useAuth()
-  if (loading) return (
+const PAGES = {
+  '/': <Dashboard />,
+  '/students': <Students />,
+  '/devices': <Devices />,
+  '/verify': <VerifyDevice />,
+  '/campus': <CampusEntries />,
+  '/attendance': <Attendance />,
+  '/courses': <Courses />,
+  '/incidents': <Incidents />,
+}
+
+function Loader() {
+  return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -22,8 +34,18 @@ function PrivateRoute({ children, roles }) {
       </div>
     </div>
   )
+}
+
+function RequireAuth({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return <Loader />
   if (!user) return <Navigate to="/login" replace />
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />
+  return children
+}
+
+function RequireRole({ roles, children }) {
+  const { user } = useAuth()
+  if (roles && !roles.includes(user?.role)) return <AccessDenied roles={roles} />
   return children
 }
 
@@ -35,28 +57,27 @@ function AppRoutes() {
 
       {/* Full-screen NFC station — no sidebar */}
       <Route path="/nfc-station" element={
-        <PrivateRoute roles={['admin', 'security']}>
-          <NFCStation />
-        </PrivateRoute>
+        <RequireAuth>
+          <RequireRole roles={['admin', 'security']}>
+            <NFCStation />
+          </RequireRole>
+        </RequireAuth>
       } />
 
-      {/* Main app with sidebar layout */}
+      {/* Main app with sidebar */}
       <Route path="/*" element={
-        <PrivateRoute>
+        <RequireAuth>
           <Layout>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/students" element={<Students />} />
-              <Route path="/devices" element={<Devices />} />
-              <Route path="/attendance" element={<Attendance />} />
-              <Route path="/campus" element={<CampusEntries />} />
-              <Route path="/courses" element={<Courses />} />
-              <Route path="/verify" element={<VerifyDevice />} />
-              <Route path="/incidents" element={<Incidents />} />
+              {NAV.filter((n) => !n.fullscreen).map((n) => (
+                <Route key={n.path} path={n.path === '/' ? '/' : n.path} element={
+                  <RequireRole roles={n.roles}>{PAGES[n.path]}</RequireRole>
+                } />
+              ))}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
-        </PrivateRoute>
+        </RequireAuth>
       } />
     </Routes>
   )

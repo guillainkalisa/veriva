@@ -1,11 +1,12 @@
-from rest_framework import status, permissions
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from accounts.permissions import IsAdmin, IsAdminOrSecurity
+from django.utils import timezone
+from accounts.permissions import IsAdmin, IsStaff, IsAdminOrSecurity
 
 from .models import IncidentReport
 from .serializers import IncidentReportSerializer, ResolveIncidentSerializer
@@ -38,10 +39,10 @@ class IncidentReportViewSet(ModelViewSet):
 
 
 class DashboardStatsView(APIView):
-    """Aggregated stats for the admin dashboard."""
+    """Aggregated stats for the dashboard."""
+    permission_classes = [IsStaff]
 
     def get(self, request):
-        from django.utils import timezone
         today = timezone.localdate()
 
         return Response({

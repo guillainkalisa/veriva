@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from students.models import Student
+from campus.models import Directorate
 
 
 class Device(models.Model):
@@ -12,6 +13,9 @@ class Device(models.Model):
     specifications = models.TextField(blank=True)
     qr_code = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
     qr_data = models.CharField(max_length=500, unique=True, blank=True)
+    managing_directorate = models.ForeignKey(
+        Directorate, on_delete=models.SET_NULL, null=True, blank=True, related_name='devices'
+    )
     is_active = models.BooleanField(default=True)
     registered_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

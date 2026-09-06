@@ -8,12 +8,14 @@ class DeviceSerializer(serializers.ModelSerializer):
     owner_detail = StudentListSerializer(source='owner', read_only=True)
     qr_code_url = serializers.SerializerMethodField()
     active_loan = serializers.SerializerMethodField()
+    managing_directorate_name = serializers.CharField(source='managing_directorate.name', read_only=True)
 
     class Meta:
         model = Device
         fields = [
             'id', 'owner', 'owner_detail', 'brand', 'model', 'serial_number',
             'color', 'specifications', 'qr_code', 'qr_code_url', 'qr_data',
+            'managing_directorate', 'managing_directorate_name',
             'is_active', 'registered_at', 'updated_at', 'active_loan'
         ]
         read_only_fields = ['qr_code', 'qr_data', 'registered_at', 'updated_at']

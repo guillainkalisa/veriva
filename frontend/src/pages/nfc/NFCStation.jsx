@@ -169,8 +169,8 @@ export default function NFCStation() {
                 <h2 className="text-3xl font-bold text-gray-900 leading-tight">{student.full_name}</h2>
                 <p className="text-brand-600 font-mono font-semibold text-lg mt-1">{student.registration_number}</p>
                 <div className="mt-3 space-y-1 text-gray-500 text-sm">
-                  <p>{student.college}</p>
-                  <p>{student.department}</p>
+                  <p>{student.college_name}</p>
+                  <p>{student.department_name}</p>
                   <p>Year {student.year_of_study}</p>
                 </div>
                 <span className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-sm font-medium ${

@@ -1,30 +1,82 @@
-from rest_framework import generics, status, permissions
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from accounts.permissions import IsAdmin, IsAdminOrReadOnly
+from accounts.permissions import IsAdmin, IsAdminOrSecurity, IsAdminOrReadOnly
 
-from .models import Student, NFCCard
+from .models import Student, NFCCard, College, School, Department, Program
 from .serializers import (
-    StudentSerializer, StudentListSerializer,
-    NFCCardSerializer, NFCCardCreateSerializer, NFCCardStatusSerializer
+    StudentSerializer, StudentListSerializer, StudentCreateUpdateSerializer,
+    NFCCardSerializer, NFCCardCreateSerializer, NFCCardStatusSerializer,
+    CollegeSerializer, SchoolSerializer, DepartmentSerializer, ProgramSerializer
 )
 
 
+class CollegeViewSet(ModelViewSet):
+    queryset = College.objects.filter(is_active=True).order_by('name')
+    serializer_class = CollegeSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['is_active']
+    search_fields = ['name', 'code']
+    ordering_fields = ['name', 'code']
+
+
+class SchoolViewSet(ModelViewSet):
+    queryset = School.objects.select_related('college').filter(is_active=True).order_by('college', 'name')
+    serializer_class = SchoolSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['college', 'is_active']
+    search_fields = ['name', 'code']
+    ordering_fields = ['name', 'code', 'college']
+
+
+class DepartmentViewSet(ModelViewSet):
+    queryset = Department.objects.select_related('school', 'school__college').filter(is_active=True).order_by('school', 'name')
+    serializer_class = DepartmentSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['school', 'school__college', 'is_active']
+    search_fields = ['name', 'code']
+    ordering_fields = ['name', 'code', 'school']
+
+
+class ProgramViewSet(ModelViewSet):
+    queryset = Program.objects.select_related('department', 'department__school').filter(is_active=True).order_by('department', 'name')
+    serializer_class = ProgramSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    pagination_class = None
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['department', 'level', 'is_active']
+    search_fields = ['name', 'code']
+    ordering_fields = ['name', 'code', 'level', 'department']
+
+
 class StudentViewSet(ModelViewSet):
-    queryset = Student.objects.select_related('nfc_card').all()
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['is_active', 'college', 'department', 'year_of_study']
+    filterset_fields = ['is_active', 'college', 'school', 'department', 'program', 'year_of_study']
     search_fields = ['full_name', 'registration_number', 'email', 'phone']
-    ordering_fields = ['full_name', 'registration_number', 'created_at']
+    ordering_fields = ['full_name', 'registration_number', 'created_at', 'admission_date']
+    ordering = ['-admission_date']
+
+    def get_queryset(self):
+        return Student.objects.select_related(
+            'college', 'school', 'department', 'program', 'nfc_card'
+        )
 
     def get_serializer_class(self):
         if self.action == 'list':
             return StudentListSerializer
+        elif self.action in ['create', 'update', 'partial_update']:
+            return StudentCreateUpdateSerializer
         return StudentSerializer
 
     @action(detail=True, methods=['post'], url_path='assign-nfc', permission_classes=[IsAdmin])
@@ -75,9 +127,36 @@ class StudentViewSet(ModelViewSet):
 
         return Response(NFCCardSerializer(nfc).data)
 
+    @action(detail=False, methods=['get'])
+    def by_department(self, request):
+        department_id = request.query_params.get('department_id')
+        if not department_id:
+            return Response({'detail': 'department_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        queryset = self.get_queryset().filter(department_id=department_id)
+        year = request.query_params.get('year')
+        if year:
+            queryset = queryset.filter(year_of_study=year)
+
+        return Response(self.get_serializer(queryset, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def by_program(self, request):
+        program_id = request.query_params.get('program_id')
+        if not program_id:
+            return Response({'detail': 'program_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        queryset = self.get_queryset().filter(program_id=program_id)
+        year = request.query_params.get('year')
+        if year:
+            queryset = queryset.filter(year_of_study=year)
+
+        return Response(self.get_serializer(queryset, many=True).data)
+
 
 class NFCLookupView(APIView):
-    """Public endpoint for NFC reader to verify a card tap."""
+    """Look up a student by their NFC card UID."""
+    permission_classes = [IsAdminOrSecurity]
 
     def get(self, request):
         uid = request.query_params.get('uid')
@@ -85,7 +164,10 @@ class NFCLookupView(APIView):
             return Response({'detail': 'UID is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            card = NFCCard.objects.select_related('student').get(uid=uid)
+            card = NFCCard.objects.select_related(
+                'student', 'student__college', 'student__school',
+                'student__department', 'student__program',
+            ).get(uid=uid)
         except NFCCard.DoesNotExist:
             return Response({'detail': 'Card not found.'}, status=status.HTTP_404_NOT_FOUND)
 

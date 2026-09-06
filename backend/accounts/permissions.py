@@ -1,36 +1,61 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+# The three operational roles. `student` accounts exist in the enum but have no
+# self-service surface yet, so they get no API access.
+STAFF_ROLES = {'admin', 'security', 'lecturer'}
 
-class IsAdmin(BasePermission):
+
+def role_of(request):
+    user = getattr(request, 'user', None)
+    if not user or not user.is_authenticated:
+        return None
+    return getattr(user, 'role', None)
+
+
+class RolePermission(BasePermission):
+    """Grant full access to `write_roles`; if `read_roles` is set, also grant
+    SAFE_METHODS (GET/HEAD/OPTIONS) to those roles."""
+    write_roles = frozenset()
+    read_roles = None
+
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'admin'
-
-
-class IsAdminOrReadOnly(BasePermission):
-    """Admin can write; all authenticated users can read."""
-    def has_permission(self, request, view):
-        if not request.user.is_authenticated:
+        role = role_of(request)
+        if role is None:
             return False
-        if request.method in SAFE_METHODS:
+        if role in self.write_roles:
             return True
-        return request.user.role == 'admin'
+        if self.read_roles is not None and request.method in SAFE_METHODS:
+            return role in self.read_roles
+        return False
 
 
-class IsAdminOrSecurity(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ('admin', 'security')
+class IsAdmin(RolePermission):
+    write_roles = {'admin'}
 
 
-class IsAdminOrLecturer(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ('admin', 'lecturer')
+class IsAdminOrSecurity(RolePermission):
+    write_roles = {'admin', 'security'}
 
 
-class IsAdminOrLecturerOrReadOnly(BasePermission):
-    """Admin/Lecturer can write; all authenticated users can read."""
-    def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return False
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user.role in ('admin', 'lecturer')
+class IsAdminOrLecturer(RolePermission):
+    write_roles = {'admin', 'lecturer'}
+
+
+class IsStaff(RolePermission):
+    """Any operational role. Read-only utility endpoints (dashboards, summaries)."""
+    write_roles = STAFF_ROLES
+
+
+class IsAdminOrReadOnly(RolePermission):
+    write_roles = {'admin'}
+    read_roles = STAFF_ROLES
+
+
+class IsAdminOrSecurityOrReadOnly(RolePermission):
+    write_roles = {'admin', 'security'}
+    read_roles = STAFF_ROLES
+
+
+class IsAdminOrLecturerOrReadOnly(RolePermission):
+    write_roles = {'admin', 'lecturer'}
+    read_roles = STAFF_ROLES

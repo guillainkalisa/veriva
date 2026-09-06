@@ -10,6 +10,7 @@ class IncidentReportSerializer(serializers.ModelSerializer):
     type_display = serializers.CharField(source='get_type_display', read_only=True)
     severity_display = serializers.CharField(source='get_severity_display', read_only=True)
     involved_student_detail = StudentListSerializer(source='involved_student', read_only=True)
+    handling_directorate_name = serializers.CharField(source='handling_directorate.name', read_only=True)
 
     class Meta:
         model = IncidentReport
@@ -17,7 +18,9 @@ class IncidentReportSerializer(serializers.ModelSerializer):
             'id', 'type', 'type_display', 'severity', 'severity_display',
             'description', 'reported_by', 'reported_by_name',
             'involved_student', 'involved_student_detail',
-            'involved_device', 'location', 'is_resolved',
+            'involved_device', 'location',
+            'handling_directorate', 'handling_directorate_name',
+            'is_resolved',
             'resolution_notes', 'resolved_by', 'resolved_by_name',
             'created_at', 'resolved_at'
         ]

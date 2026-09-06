@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { createDevice, updateDevice } from '../../api/devices'
 import { getStudents } from '../../api/students'
+import { getDirectorates } from '../../api/campus'
 
 export default function DeviceForm({ device, onSuccess }) {
   const [form, setForm] = useState({
@@ -11,12 +12,15 @@ export default function DeviceForm({ device, onSuccess }) {
     serial_number: device?.serial_number || '',
     color: device?.color || '',
     specifications: device?.specifications || '',
+    managing_directorate: device?.managing_directorate || '',
   })
   const [students, setStudents] = useState([])
+  const [directorates, setDirectorates] = useState([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     getStudents({ page_size: 200 }).then(({ data }) => setStudents(data.results))
+    getDirectorates().then(({ data }) => setDirectorates(data))
   }, [])
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -25,11 +29,12 @@ export default function DeviceForm({ device, onSuccess }) {
     e.preventDefault()
     setLoading(true)
     try {
+      const payload = { ...form, managing_directorate: form.managing_directorate || null }
       if (device) {
-        await updateDevice(device.id, form)
+        await updateDevice(device.id, payload)
         toast.success('Device updated.')
       } else {
-        await createDevice(form)
+        await createDevice(payload)
         toast.success('Device registered. QR code generated.')
       }
       onSuccess()
@@ -87,6 +92,17 @@ export default function DeviceForm({ device, onSuccess }) {
           onChange={(e) => set('specifications', e.target.value)}
           placeholder="e.g. Intel Core i5, 8GB RAM, 256GB SSD"
         />
+      </div>
+
+      <div>
+        <label className="label">Managing Directorate</label>
+        <select className="input" value={form.managing_directorate}
+          onChange={(e) => set('managing_directorate', e.target.value)}>
+          <option value="">Unassigned</option>
+          {directorates.map((d) => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
       </div>
 
       {!device && (

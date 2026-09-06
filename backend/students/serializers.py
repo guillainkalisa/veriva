@@ -1,5 +1,41 @@
 from rest_framework import serializers
-from .models import Student, NFCCard
+from .models import Student, NFCCard, College, School, Department, Program
+
+
+class CollegeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = College
+        fields = ['id', 'name', 'code', 'description', 'is_active', 'created_at']
+        read_only_fields = ['created_at']
+
+
+class SchoolSerializer(serializers.ModelSerializer):
+    college_name = serializers.CharField(source='college.name', read_only=True)
+
+    class Meta:
+        model = School
+        fields = ['id', 'college', 'college_name', 'name', 'code', 'description', 'is_active', 'created_at']
+        read_only_fields = ['created_at']
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    school_name = serializers.CharField(source='school.name', read_only=True)
+    college_name = serializers.CharField(source='school.college.name', read_only=True)
+
+    class Meta:
+        model = Department
+        fields = ['id', 'school', 'school_name', 'college_name', 'name', 'code', 'description', 'is_active', 'created_at']
+        read_only_fields = ['created_at']
+
+
+class ProgramSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    school_name = serializers.CharField(source='department.school.name', read_only=True)
+
+    class Meta:
+        model = Program
+        fields = ['id', 'department', 'department_name', 'school_name', 'name', 'code', 'level', 'duration_years', 'description', 'is_active', 'created_at']
+        read_only_fields = ['created_at']
 
 
 class NFCCardSerializer(serializers.ModelSerializer):
@@ -13,20 +49,32 @@ class StudentSerializer(serializers.ModelSerializer):
     nfc_card = NFCCardSerializer(read_only=True)
     photo_url = serializers.SerializerMethodField()
 
+    college_name = serializers.CharField(source='college.name', read_only=True)
+    school_name = serializers.CharField(source='school.name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    program_name = serializers.CharField(source='program.name', read_only=True)
+    program_level = serializers.CharField(source='program.level', read_only=True)
+    full_organization = serializers.CharField(read_only=True)
+
     class Meta:
         model = Student
         fields = [
             'id', 'registration_number', 'full_name', 'email', 'phone',
-            'college', 'department', 'program', 'year_of_study',
-            'photo', 'photo_url', 'is_active', 'created_at', 'updated_at', 'nfc_card'
+            'college', 'college_name',
+            'school', 'school_name',
+            'department', 'department_name',
+            'program', 'program_name', 'program_level',
+            'year_of_study', 'admission_date',
+            'photo', 'photo_url',
+            'is_active', 'full_organization',
+            'created_at', 'updated_at', 'nfc_card',
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'admission_date']
 
     def get_photo_url(self, obj):
-        if obj.photo:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.photo.url)
+        request = self.context.get('request')
+        if obj.photo and request:
+            return request.build_absolute_uri(obj.photo.url)
         return None
 
 
@@ -34,22 +82,54 @@ class StudentListSerializer(serializers.ModelSerializer):
     has_nfc = serializers.SerializerMethodField()
     photo_url = serializers.SerializerMethodField()
 
+    college_name = serializers.CharField(source='college.name', read_only=True)
+    school_name = serializers.CharField(source='school.name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    program_name = serializers.CharField(source='program.name', read_only=True)
+
     class Meta:
         model = Student
         fields = [
-            'id', 'registration_number', 'full_name', 'email',
-            'college', 'department', 'year_of_study', 'is_active', 'has_nfc', 'photo_url'
+            'id', 'registration_number', 'full_name', 'email', 'phone',
+            'college', 'school', 'department', 'program',
+            'college_name', 'school_name', 'department_name', 'program_name',
+            'year_of_study', 'is_active', 'has_nfc', 'photo_url', 'admission_date',
         ]
 
     def get_has_nfc(self, obj):
         return hasattr(obj, 'nfc_card') and obj.nfc_card.is_active
 
     def get_photo_url(self, obj):
-        if obj.photo:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.photo.url)
+        request = self.context.get('request')
+        if obj.photo and request:
+            return request.build_absolute_uri(obj.photo.url)
         return None
+
+
+class StudentCreateUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Student
+        fields = [
+            'id', 'registration_number', 'full_name', 'email', 'phone',
+            'college', 'school', 'department', 'program',
+            'year_of_study', 'photo', 'is_active',
+        ]
+        extra_kwargs = {'is_active': {'required': False, 'default': True}}
+
+    def validate(self, data):
+        college = data.get('college')
+        school = data.get('school')
+        department = data.get('department')
+        program = data.get('program')
+
+        if school and college and school.college_id != college.id:
+            raise serializers.ValidationError('School does not belong to the selected college.')
+        if department and school and department.school_id != school.id:
+            raise serializers.ValidationError('Department does not belong to the selected school.')
+        if program and department and program.department_id != department.id:
+            raise serializers.ValidationError('Programme does not belong to the selected department.')
+
+        return data
 
 
 class NFCCardCreateSerializer(serializers.ModelSerializer):

@@ -123,8 +123,8 @@ export default function VerifyDevice() {
                   </span>
                 </div>
                 <div className="text-sm text-gray-500 space-y-0.5">
-                  <p>{owner?.college}</p>
-                  <p>{owner?.department}</p>
+                  <p>{owner?.college_name}</p>
+                  <p>{owner?.department_name}</p>
                   <p>Year {owner?.year_of_study}</p>
                   {owner?.email && <p className="text-xs text-gray-400">{owner.email}</p>}
                 </div>

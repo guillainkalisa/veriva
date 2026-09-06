@@ -1,10 +1,12 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser
+from .permissions import IsAdmin
 from .serializers import (
     CustomTokenObtainPairSerializer, UserSerializer,
     UserCreateSerializer, ChangePasswordSerializer
@@ -13,7 +15,7 @@ from .serializers import (
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
 
 class LogoutView(APIView):
@@ -36,7 +38,7 @@ class MeView(generics.RetrieveUpdateAPIView):
 
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = CustomUser.objects.all().order_by('-date_joined')
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdmin]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -47,7 +49,7 @@ class UserListCreateView(generics.ListCreateAPIView):
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdmin]
 
 
 class ChangePasswordView(APIView):

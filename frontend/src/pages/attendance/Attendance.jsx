@@ -5,8 +5,10 @@ import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
 import { getSessions, createSession, closeSession, getSessionRecords, getCourses } from '../../api/attendance'
+import { useRole } from '../../hooks/useRole'
 
 export default function Attendance() {
+  const { canManageAttendance } = useRole()
   const [sessions, setSessions] = useState([])
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -64,18 +66,18 @@ export default function Attendance() {
       <PageHeader
         title="Attendance Sessions"
         subtitle="Manage classroom attendance sessions"
-        action={
+        action={canManageAttendance && (
           <button className="btn-primary" onClick={() => setShowForm(true)}>
             <Plus size={16} /> New Session
           </button>
-        }
+        )}
       />
 
       {loading ? (
         <div className="card p-8 text-center text-gray-400 text-sm">Loading...</div>
       ) : sessions.length === 0 ? (
         <EmptyState icon={CalendarCheck} message="No attendance sessions yet." action={
-          <button className="btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create Session</button>
+          canManageAttendance && <button className="btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create Session</button>
         } />
       ) : (
         <div className="space-y-3">
@@ -98,7 +100,7 @@ export default function Attendance() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {s.is_open && (
+                  {s.is_open && canManageAttendance && (
                     <button
                       className="btn-secondary text-xs py-1 px-3"
                       onClick={(e) => { e.stopPropagation(); handleClose(s.id) }}

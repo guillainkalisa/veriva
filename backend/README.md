@@ -1,38 +1,37 @@
-Backend (Django) — VERIVA
-=========================
+# VERIVA backend
 
-Overview
---------
+Django 5 + DRF. Serves the REST API under `/api/v1/` and the Django admin at `/admin/`.
 
-The backend is built with Django and Django REST Framework. It provides REST APIs for managing users, students, devices, attendance records, and verification incidents. Data is stored in `db.sqlite3` by default.
+## Apps
 
-Key apps
---------
+| App | Responsibility |
+|---|---|
+| `accounts` | `CustomUser` with a `role` field, JWT login/logout, role-based permission classes |
+| `campus` | administrative `Directorate` units; devices and incidents can be routed to one |
+| `students` | students, the `College > School > Department > Programme` hierarchy (UR Law 71/2013), NFC cards |
+| `devices` | laptop records, QR generation, borrow/lend loans |
+| `attendance` | courses, class sessions, attendance records, campus entry/exit log |
+| `verification` | security incident reports, dashboard aggregation |
 
-- `accounts` — user models, authentication, permissions
-- `students` — student records and management
-- `devices` — reader devices and utilities
-- `attendance` — attendance records and reporting
-- `verification` — incident and verification workflows
+`config/` holds settings, the root URLconf and the WSGI/ASGI entrypoints.
 
-Important files
----------------
+## Setup
 
-- `manage.py` — Django management entrypoint
-- `requirements.txt` — Python dependencies
-- `seed.py` — helper to populate initial/demo data
-- App folders: `accounts/`, `students/`, `devices/`, `attendance/`, `verification/`
+```bash
+python3 -m venv venv
+venv/bin/pip install -r requirements.txt
+venv/bin/python manage.py migrate
+venv/bin/python seed.py
+venv/bin/python manage.py runserver
+```
 
-Running locally
----------------
+`DATABASE_URL` is read from the environment (see `.env.example`). Without it, set one
+in `.env` or fall back to SQLite for local work.
 
-Follow the Quick start in [docs/README.md](../docs/README.md). The backend serves the API at `http://127.0.0.1:8000/` by default when using `python manage.py runserver`.
+## Notes
 
-Where to find APIs
-------------------
-
-Each Django app defines URL routes in its `urls.py`. API views and serializers are under each app's `views.py` and `serializers.py`.
-
-Examples
---------
-- API helpers: look in `accounts/serializers.py`, `attendance/views.py`, and `devices/utils.py` for implementation patterns.
+- QR payload is JSON signed into `Device.qr_data`; `devices/verify/` matches the scanned
+  string against the stored value.
+- NFC readers behave as keyboards: they type the card UID and press Enter. The NFC
+  station page captures that and calls `attendance/campus-nfc-tap/`.
+- Permission classes live in `accounts/permissions.py`; each ViewSet picks one.

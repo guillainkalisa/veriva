@@ -5,8 +5,10 @@ import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
 import { getCourses, createCourse, updateCourse } from '../../api/attendance'
+import { useRole } from '../../hooks/useRole'
 
 export default function Courses() {
+  const { canManageCourses } = useRole()
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -42,7 +44,7 @@ export default function Courses() {
   return (
     <div>
       <PageHeader title="Courses" subtitle="Manage academic courses for attendance tracking"
-        action={<button className="btn-primary" onClick={() => openForm()}><Plus size={16} /> Add Course</button>}
+        action={canManageCourses && <button className="btn-primary" onClick={() => openForm()}><Plus size={16} /> Add Course</button>}
       />
 
       <div className="card">
@@ -73,9 +75,13 @@ export default function Courses() {
                       <span className={c.is_active ? 'badge-green' : 'badge-gray'}>{c.is_active ? 'Active' : 'Inactive'}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <button onClick={() => openForm(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-brand-600">
-                        <Edit size={14} />
-                      </button>
+                      {canManageCourses ? (
+                        <button onClick={() => openForm(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-brand-600">
+                          <Edit size={14} />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-300">View only</span>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -1,30 +1,27 @@
-Frontend (React + Vite) — VERIVA
-================================
+# VERIVA frontend
 
-Overview
---------
+React 18 + Vite + Tailwind. Talks to the backend through `/api/v1/`.
 
-The frontend is a Vite React application using TailwindCSS. It consumes the backend REST APIs via small API helper modules in `frontend/src/api/`.
+## Structure
 
-Key folders
------------
+- `src/api/` — one module per backend resource; all requests go through `client.js`,
+  which attaches the JWT and refreshes it on a 401
+- `src/pages/` — one folder per route (`dashboard`, `students`, `devices`, `attendance`,
+  `campus`, `courses`, `verification`, `nfc`, `auth`)
+- `src/components/` — shared UI (layout, sidebar, modal, page header, stat card, ...)
+- `src/hooks/` — `useAuth` (session + login/logout), `useRole` (per-role capability flags)
 
-- `src/api/` — API clients (attendance.js, auth.js, devices.js, students.js, verification.js)
-- `src/pages/` — route pages (dashboard, attendance, devices, students, verification)
-- `src/components/` — shared components and UI primitives
-- `src/hooks/` — custom hooks (authentication, role checks)
-
-Development
------------
-
-Use the scripts in `package.json`:
+## Development
 
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
 
-Configuration
--------------
-API base URL is configured in `frontend/src/api/client.js`. Update it if the backend runs on a non-default host or port.
+Vite proxies `/api` and `/media` to `localhost:8000`, so start the backend too.
+
+## Routing
+
+`App.jsx` wraps everything in `AuthProvider`. `PrivateRoute` redirects anonymous users
+to `/login` and enforces `roles` where a route sets them. `/nfc-station` renders
+full-screen without the sidebar for use at a campus gate.

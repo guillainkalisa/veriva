@@ -1,5 +1,5 @@
 import json
-from rest_framework import status, permissions
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.utils import timezone
-from accounts.permissions import IsAdmin, IsAdminOrReadOnly, IsAdminOrSecurity
+from accounts.permissions import IsAdmin, IsAdminOrSecurity, IsAdminOrReadOnly
 
 from .models import Device, DeviceLoan
 from .serializers import DeviceSerializer, DeviceLoanSerializer, DeviceVerifySerializer
@@ -55,6 +55,7 @@ class DeviceLoanViewSet(ModelViewSet):
 
 class DeviceVerifyView(APIView):
     """Verify device ownership by scanning QR data."""
+    permission_classes = [IsAdminOrSecurity]
 
     def post(self, request):
         serializer = DeviceVerifySerializer(data=request.data)

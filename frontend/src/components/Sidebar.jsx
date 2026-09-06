@@ -1,25 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import {
-  LayoutDashboard, Users, Laptop, CalendarCheck,
-  ShieldAlert, DoorOpen, LogOut, BookOpen, ChevronRight, ScanLine, Wifi
-} from 'lucide-react'
+import { ShieldAlert, LogOut, ChevronRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-
-const ALL_NAV = [
-  { to: '/',           icon: LayoutDashboard, label: 'Dashboard',      roles: ['admin', 'security', 'lecturer'] },
-  { to: '/students',   icon: Users,           label: 'Students',       roles: ['admin', 'lecturer'] },
-  { to: '/devices',    icon: Laptop,          label: 'Devices',        roles: ['admin'] },
-  { to: '/verify',     icon: ScanLine,        label: 'Verify Device',  roles: ['admin', 'security'] },
-  { to: '/attendance', icon: CalendarCheck,   label: 'Attendance',     roles: ['admin', 'lecturer'] },
-  { to: '/nfc-station', icon: Wifi,            label: 'NFC Station',    roles: ['admin', 'security'] },
-  { to: '/campus',     icon: DoorOpen,        label: 'Campus Entries', roles: ['admin', 'security'] },
-  { to: '/courses',    icon: BookOpen,        label: 'Courses',        roles: ['admin', 'lecturer'] },
-  { to: '/incidents',  icon: ShieldAlert,     label: 'Incidents',      roles: ['admin', 'security'] },
-]
+import { NAV, ROLE_LABEL, ROLE_BADGE } from '../nav'
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
-  const navItems = ALL_NAV.filter((item) => item.roles.includes(user?.role))
+  const role = user?.role
+  const navItems = NAV.filter((item) => item.roles.includes(role))
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-brand-900 flex flex-col z-20">
@@ -36,11 +23,11 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {navItems.map(({ path, icon: Icon, label }) => (
           <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
+            key={path}
+            to={path}
+            end={path === '/'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group ${
                 isActive
@@ -65,7 +52,9 @@ export default function Sidebar() {
             <p className="text-white text-sm font-medium truncate">
               {user?.full_name || user?.username}
             </p>
-            <p className="text-brand-300 text-xs capitalize">{user?.role}</p>
+            <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-semibold ${ROLE_BADGE[role] || ROLE_BADGE.student}`}>
+              {ROLE_LABEL[role] || 'Unknown'}
+            </span>
           </div>
         </div>
         <button
