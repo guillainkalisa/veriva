@@ -17,6 +17,13 @@ export function useRole() {
     isSecurityChief: role === 'security_chief',
     isSecurityGuard: role === 'security',
     isLecturer: role === 'lecturer',
+    isHod: role === 'hod',
+    isDean: role === 'dean',
+
+    assignedDepartment: user?.assigned_department ?? null,
+    assignedDepartmentName: user?.assigned_department_name ?? null,
+    assignedSchool: user?.assigned_school ?? null,
+    assignedSchoolName: user?.assigned_school_name ?? null,
 
     canManageUsers:       is('admin'),
     canManageOrg:         is('admin'),
@@ -25,7 +32,7 @@ export function useRole() {
     canManageLoans:       is('admin'),
     canManageGates:       is('admin'),
 
-    canManageCourses:     is('admin', 'lecturer'),
+    canManageCourses:     is('admin', 'lecturer', 'hod', 'dean'),
     canManageAttendance:  is('admin', 'lecturer'),
     canRecordClassNFC:    is('admin', 'lecturer'),
 

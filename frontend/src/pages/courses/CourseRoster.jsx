@@ -3,8 +3,7 @@ import { UserPlus, UserMinus, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import SearchBar from '../../components/SearchBar'
 import Spinner from '../../components/Spinner'
-import { getCourseRoster, enrollStudents, unenrollStudents } from '../../api/attendance'
-import { getStudents } from '../../api/students'
+import { getCourseRoster, enrollStudents, unenrollStudents, getEnrollableStudents } from '../../api/attendance'
 
 export default function CourseRoster({ course }) {
   const [roster, setRoster] = useState(null)
@@ -21,11 +20,8 @@ export default function CourseRoster({ course }) {
 
   useEffect(() => {
     if (!search.trim()) { setCandidates([]); return }
-    const enrolledIds = new Set((roster || []).map((r) => r.student.id))
-    getStudents({ search, is_active: true }).then(({ data }) => {
-      setCandidates(data.results.filter((s) => !enrolledIds.has(s.id)))
-    })
-  }, [search, roster])
+    getEnrollableStudents(course.id, search).then(({ data }) => setCandidates(data))
+  }, [search, course.id])
 
   const toggleSelect = (id) => {
     setSelected((sel) => sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id])

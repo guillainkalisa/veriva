@@ -8,17 +8,34 @@ import LoadingState from '../../components/LoadingState'
 import Spinner from '../../components/Spinner'
 import CourseRoster from './CourseRoster'
 import { getCourses, createCourse, updateCourse } from '../../api/attendance'
+import { getColleges, getSchools, getDepartments } from '../../api/organization'
+import { getUsers } from '../../api/auth'
 import { useRole } from '../../hooks/useRole'
 
+const emptyForm = { name: '', code: '', lecturer: '', department: '', min_attendance_percent: 80 }
+
 export default function Courses() {
-  const { canManageCourses } = useRole()
+  const {
+    canManageCourses, isAdmin, isHod, isDean, isLecturer,
+    assignedDepartment, assignedDepartmentName, assignedSchool,
+  } = useRole()
   const [courses, setCourses] = useState([])
+  const [lecturers, setLecturers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selected, setSelected] = useState(null)
   const [rosterCourse, setRosterCourse] = useState(null)
-  const [form, setForm] = useState({ name: '', code: '', department: '', min_attendance_percent: 80 })
+  const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+
+  // Department picker state. Admin cascades College -> School -> Department;
+  // a dean's picker is scoped to their own school; a HoD and a lecturer
+  // never see this picker at all (server decides/keeps it for them).
+  const [colleges, setColleges] = useState([])
+  const [schools, setSchools] = useState([])
+  const [departments, setDepartments] = useState([])
+  const [college, setCollege] = useState('')
+  const [school, setSchool] = useState('')
 
   const load = useCallback(() => {
     setLoading(true)
@@ -27,11 +44,31 @@ export default function Courses() {
 
   useEffect(() => { load() }, [load])
 
+  useEffect(() => {
+    if (isAdmin || isHod || isDean) getUsers({ role: 'lecturer' }).then(({ data }) => setLecturers(data.results))
+  }, [isAdmin, isHod, isDean])
+
+  useEffect(() => {
+    if (isAdmin) getColleges().then(({ data }) => setColleges(data))
+    if (isDean && assignedSchool) getDepartments(assignedSchool).then(({ data }) => setDepartments(data))
+  }, [isAdmin, isDean, assignedSchool])
+
+  const onCollegeChange = (id) => {
+    setCollege(id); setSchool(''); setSchools([]); setDepartments([])
+    if (id) getSchools(id).then(({ data }) => setSchools(data))
+  }
+
+  const onSchoolChange = (id) => {
+    setSchool(id); setDepartments([])
+    if (id) getDepartments(id).then(({ data }) => setDepartments(data))
+  }
+
   const openForm = (c = null) => {
     setSelected(c)
     setForm(c
-      ? { name: c.name, code: c.code, department: c.department, min_attendance_percent: c.min_attendance_percent }
-      : { name: '', code: '', department: '', min_attendance_percent: 80 })
+      ? { name: c.name, code: c.code, lecturer: c.lecturer || '', department: c.department || '', min_attendance_percent: c.min_attendance_percent }
+      : { ...emptyForm })
+    setCollege(''); setSchool(''); setSchools([]); setDepartments([])
     setShowForm(true)
   }
 
@@ -39,8 +76,13 @@ export default function Courses() {
     e.preventDefault()
     setSaving(true)
     try {
-      if (selected) { await updateCourse(selected.id, form); toast.success('Course updated.') }
-      else { await createCourse(form); toast.success('Course created.') }
+      const body = { name: form.name, code: form.code, min_attendance_percent: form.min_attendance_percent }
+      if (isAdmin || isHod || isDean) {
+        body.lecturer = form.lecturer || null
+        if (!isHod) body.department = form.department || null
+      }
+      if (selected) { await updateCourse(selected.id, body); toast.success('Course updated.') }
+      else { await createCourse(body); toast.success('Course created.') }
       setShowForm(false)
       load()
     } catch { toast.error('Failed to save course.') }
@@ -75,7 +117,7 @@ export default function Courses() {
                   <tr key={c.id} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3 font-mono font-semibold text-brand-700">{c.code}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{c.department}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.department_name || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{c.lecturer_name || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{c.min_attendance_percent}%</td>
                     <td className="px-4 py-3">
@@ -113,10 +155,49 @@ export default function Courses() {
             <label className="label">Course Name *</label>
             <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
-          <div>
-            <label className="label">Department *</label>
-            <input className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required />
-          </div>
+
+          {(isAdmin || isDean) && (
+            <div>
+              <label className="label">Department *</label>
+              {isAdmin ? (
+                <div className="grid grid-cols-3 gap-2">
+                  <select className="input" value={college} onChange={(e) => onCollegeChange(e.target.value)}>
+                    <option value="">College...</option>
+                    {colleges.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                  <select className="input" value={school} onChange={(e) => onSchoolChange(e.target.value)} disabled={!college}>
+                    <option value="">School...</option>
+                    {schools.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                  <select className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} disabled={!school}>
+                    <option value="">Department...</option>
+                    {departments.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <select className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
+                  <option value="">Select department...</option>
+                  {departments.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+              )}
+            </div>
+          )}
+          {isHod && (
+            <p className="text-xs text-gray-400 -mt-2">Department: {assignedDepartmentName || 'your department'} (fixed)</p>
+          )}
+
+          {(isAdmin || isHod || isDean) && (
+            <div>
+              <label className="label">Lecturer</label>
+              <select className="input" value={form.lecturer} onChange={(e) => setForm({ ...form, lecturer: e.target.value })}>
+                <option value="">Unassigned</option>
+                {lecturers.map((l) => (
+                  <option key={l.id} value={l.id}>{l.first_name} {l.last_name} ({l.username})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="label">Minimum Attendance to Sit Exam (%) *</label>
             <input className="input" type="number" min="0" max="100" value={form.min_attendance_percent}

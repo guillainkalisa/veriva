@@ -8,9 +8,11 @@ import LoadingState from '../../components/LoadingState'
 import Spinner from '../../components/Spinner'
 import { getSessions, createSession, closeSession, getSessionRecords, getCourses } from '../../api/attendance'
 import { useRole } from '../../hooks/useRole'
+import { useAuth } from '../../hooks/useAuth'
 
 export default function Attendance() {
-  const { canManageAttendance } = useRole()
+  const { canManageAttendance, isLecturer } = useRole()
+  const { user } = useAuth()
   const [sessions, setSessions] = useState([])
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -22,13 +24,16 @@ export default function Attendance() {
 
   const load = useCallback(() => {
     setLoading(true)
-    Promise.all([getSessions({ ordering: '-date' }), getCourses()])
+    Promise.all([
+      getSessions({ ordering: '-date' }),
+      getCourses(isLecturer && user ? { lecturer: user.id } : {}),
+    ])
       .then(([{ data: s }, { data: c }]) => {
         setSessions(s.results)
         setCourses(c.results)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [isLecturer, user])
 
   useEffect(() => { load() }, [load])
 

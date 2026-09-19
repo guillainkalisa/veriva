@@ -6,6 +6,7 @@ export const updateCourse = (id, data) => client.patch(`/attendance/courses/${id
 export const enrollStudents = (id, studentIds) => client.post(`/attendance/courses/${id}/enroll/`, { student_ids: studentIds })
 export const unenrollStudents = (id, studentIds) => client.post(`/attendance/courses/${id}/unenroll/`, { student_ids: studentIds })
 export const getCourseRoster = (id) => client.get(`/attendance/courses/${id}/roster/`)
+export const getEnrollableStudents = (id, q) => client.get(`/attendance/courses/${id}/enrollable-students/`, { params: { q } })
 
 export const getSessions = (params) => client.get('/attendance/sessions/', { params })
 export const getSession = (id) => client.get(`/attendance/sessions/${id}/`)
