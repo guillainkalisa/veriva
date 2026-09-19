@@ -1,6 +1,11 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from campus.models import Gate
 from .models import CustomUser
+
+
+def gate_summary(user):
+    return [{'id': g.id, 'name': g.name} for g in user.assigned_gates.all()]
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -20,29 +25,64 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'email': self.user.email,
             'role': self.user.role,
             'phone': self.user.phone,
+            'assigned_gates': gate_summary(self.user),
         }
         return data
 
 
 class UserSerializer(serializers.ModelSerializer):
+    assigned_gates = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Gate.objects.all(), required=False
+    )
+    assigned_gate_names = serializers.SerializerMethodField()
+
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'role', 'phone', 'is_active', 'date_joined']
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'email', 'role', 'phone',
+            'assigned_gates', 'assigned_gate_names', 'is_active', 'date_joined',
+        ]
         read_only_fields = ['date_joined']
+
+    def get_assigned_gate_names(self, obj):
+        return [g.name for g in obj.assigned_gates.all()]
+
+
+class MeSerializer(serializers.ModelSerializer):
+    """The signed-in user editing their own profile. Role, gates and status are
+    read-only here — only an admin can change those (via /auth/users/)."""
+    assigned_gate_names = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'email', 'role', 'phone',
+            'assigned_gate_names', 'is_active', 'date_joined',
+        ]
+        read_only_fields = ['id', 'username', 'email', 'role', 'assigned_gate_names', 'is_active', 'date_joined']
+
+    def get_assigned_gate_names(self, obj):
+        return [g.name for g in obj.assigned_gates.all()]
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
+    assigned_gates = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Gate.objects.all(), required=False
+    )
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'first_name', 'last_name', 'email', 'role', 'phone', 'password']
+        fields = ['username', 'first_name', 'last_name', 'email', 'role', 'phone', 'password', 'assigned_gates']
 
     def create(self, validated_data):
         password = validated_data.pop('password')
+        gates = validated_data.pop('assigned_gates', [])
         user = CustomUser(**validated_data)
         user.set_password(password)
         user.save()
+        if gates:
+            user.assigned_gates.set(gates)
         return user
 
 

@@ -4,6 +4,8 @@ import toast from 'react-hot-toast'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
+import LoadingState from '../../components/LoadingState'
+import Spinner from '../../components/Spinner'
 import { getIncidents, createIncident, resolveIncident } from '../../api/verification'
 import { getStudents } from '../../api/students'
 import { getDirectorates } from '../../api/campus'
@@ -101,11 +103,11 @@ export default function Incidents() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
+          <LoadingState />
         ) : incidents.length === 0 ? (
           <EmptyState icon={ShieldAlert} message="No incidents found." />
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 animate-fade-in">
             {incidents.map((inc) => (
               <div key={inc.id} className="p-4 hover:bg-gray-50/50">
                 <div className="flex items-start justify-between gap-4">
@@ -184,7 +186,7 @@ export default function Incidents() {
             </select>
           </div>
           <button type="submit" disabled={saving} className="btn-danger w-full justify-center">
-            <ShieldAlert size={15} /> {saving ? 'Reporting...' : 'Submit Incident Report'}
+            {saving ? <Spinner size={15} /> : <ShieldAlert size={15} />} {saving ? 'Reporting...' : 'Submit Incident Report'}
           </button>
         </form>
       </Modal>
@@ -197,7 +199,7 @@ export default function Incidents() {
             <textarea className="input resize-none" rows={3} value={resolveNotes} onChange={(e) => setResolveNotes(e.target.value)} placeholder="Describe how this was resolved..." />
           </div>
           <button className="btn-success w-full justify-center" onClick={handleResolve} disabled={saving}>
-            <CheckCircle size={15} /> {saving ? 'Resolving...' : 'Mark as Resolved'}
+            {saving ? <Spinner size={15} /> : <CheckCircle size={15} />} {saving ? 'Resolving...' : 'Mark as Resolved'}
           </button>
         </div>
       </Modal>

@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, BookOpen, Edit } from 'lucide-react'
+import { Plus, BookOpen, Edit, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
+import LoadingState from '../../components/LoadingState'
+import Spinner from '../../components/Spinner'
+import CourseRoster from './CourseRoster'
 import { getCourses, createCourse, updateCourse } from '../../api/attendance'
 import { useRole } from '../../hooks/useRole'
 
@@ -13,7 +16,8 @@ export default function Courses() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selected, setSelected] = useState(null)
-  const [form, setForm] = useState({ name: '', code: '', department: '' })
+  const [rosterCourse, setRosterCourse] = useState(null)
+  const [form, setForm] = useState({ name: '', code: '', department: '', min_attendance_percent: 80 })
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
@@ -25,7 +29,9 @@ export default function Courses() {
 
   const openForm = (c = null) => {
     setSelected(c)
-    setForm(c ? { name: c.name, code: c.code, department: c.department } : { name: '', code: '', department: '' })
+    setForm(c
+      ? { name: c.name, code: c.code, department: c.department, min_attendance_percent: c.min_attendance_percent }
+      : { name: '', code: '', department: '', min_attendance_percent: 80 })
     setShowForm(true)
   }
 
@@ -49,17 +55,17 @@ export default function Courses() {
 
       <div className="card">
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
+          <LoadingState />
         ) : courses.length === 0 ? (
           <EmptyState icon={BookOpen} message="No courses yet." action={
             <button className="btn-primary" onClick={() => openForm()}><Plus size={16} /> Add Course</button>
           } />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto animate-fade-in">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Code', 'Course Name', 'Department', 'Lecturer', 'Status', ''].map((h) => (
+                  {['Code', 'Course Name', 'Department', 'Lecturer', 'Min. Attendance', 'Status', ''].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -71,14 +77,20 @@ export default function Courses() {
                     <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
                     <td className="px-4 py-3 text-gray-600">{c.department}</td>
                     <td className="px-4 py-3 text-gray-600">{c.lecturer_name || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.min_attendance_percent}%</td>
                     <td className="px-4 py-3">
                       <span className={c.is_active ? 'badge-green' : 'badge-gray'}>{c.is_active ? 'Active' : 'Inactive'}</span>
                     </td>
                     <td className="px-4 py-3">
                       {canManageCourses ? (
-                        <button onClick={() => openForm(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-brand-600">
-                          <Edit size={14} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setRosterCourse(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-brand-600" title="Roster">
+                            <Users size={14} />
+                          </button>
+                          <button onClick={() => openForm(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-brand-600" title="Edit">
+                            <Edit size={14} />
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-300">View only</span>
                       )}
@@ -105,10 +117,19 @@ export default function Courses() {
             <label className="label">Department *</label>
             <input className="input" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required />
           </div>
+          <div>
+            <label className="label">Minimum Attendance to Sit Exam (%) *</label>
+            <input className="input" type="number" min="0" max="100" value={form.min_attendance_percent}
+              onChange={(e) => setForm({ ...form, min_attendance_percent: Number(e.target.value) })} required />
+          </div>
           <button type="submit" disabled={saving} className="btn-primary w-full justify-center">
-            {saving ? 'Saving...' : selected ? 'Update Course' : 'Create Course'}
+            {saving && <Spinner size={14} />} {saving ? 'Saving...' : selected ? 'Update Course' : 'Create Course'}
           </button>
         </form>
+      </Modal>
+
+      <Modal open={!!rosterCourse} onClose={() => setRosterCourse(null)} title={rosterCourse ? `${rosterCourse.code} Roster` : ''} size="lg">
+        {rosterCourse && <CourseRoster course={rosterCourse} />}
       </Modal>
     </div>
   )

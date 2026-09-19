@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader'
 import SearchBar from '../../components/SearchBar'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
+import LoadingState from '../../components/LoadingState'
 import DeviceForm from './DeviceForm'
 import { getDevices, deleteDevice, regenerateQR } from '../../api/devices'
 import { useRole } from '../../hooks/useRole'
@@ -69,7 +70,7 @@ export default function Devices() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
+          <LoadingState />
         ) : devices.length === 0 ? (
           <EmptyState icon={Laptop} message="No devices registered." action={
             <button className="btn-primary" onClick={() => setShowForm(true)}>
@@ -77,7 +78,7 @@ export default function Devices() {
             </button>
           } />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto animate-fade-in">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>

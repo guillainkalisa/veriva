@@ -22,3 +22,18 @@ class Directorate(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Gate(models.Model):
+    """A physical campus entry/exit point. Created and named by an admin per institution."""
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=20, unique=True)
+    location = models.CharField(max_length=200, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

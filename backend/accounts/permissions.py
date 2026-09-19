@@ -1,8 +1,9 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-# The three operational roles. `student` accounts exist in the enum but have no
+# Operational roles. `student` accounts exist in the enum but have no
 # self-service surface yet, so they get no API access.
-STAFF_ROLES = {'admin', 'security', 'lecturer'}
+SECURITY_ROLES = {'admin', 'security_chief', 'security'}
+STAFF_ROLES = {'admin', 'security_chief', 'security', 'lecturer'}
 
 
 def role_of(request):
@@ -33,8 +34,13 @@ class IsAdmin(RolePermission):
     write_roles = {'admin'}
 
 
+class IsAdminOrSecurityChief(RolePermission):
+    write_roles = {'admin', 'security_chief'}
+
+
 class IsAdminOrSecurity(RolePermission):
-    write_roles = {'admin', 'security'}
+    """Admin, the security chief, and gate guards."""
+    write_roles = SECURITY_ROLES
 
 
 class IsAdminOrLecturer(RolePermission):
@@ -52,10 +58,26 @@ class IsAdminOrReadOnly(RolePermission):
 
 
 class IsAdminOrSecurityOrReadOnly(RolePermission):
-    write_roles = {'admin', 'security'}
+    write_roles = SECURITY_ROLES
     read_roles = STAFF_ROLES
 
 
 class IsAdminOrLecturerOrReadOnly(RolePermission):
     write_roles = {'admin', 'lecturer'}
     read_roles = STAFF_ROLES
+
+
+class IsCourseOwnerOrAdmin(RolePermission):
+    """Any staff role may read; only admin or the course's own lecturer may write.
+    `obj` may be a Course, or anything with a `course` FK (e.g. AttendanceSession)."""
+    write_roles = {'admin', 'lecturer'}
+    read_roles = STAFF_ROLES
+
+    def has_object_permission(self, request, view, obj):
+        role = role_of(request)
+        if role == 'admin':
+            return True
+        if request.method in SAFE_METHODS:
+            return role in self.read_roles
+        course = obj if hasattr(obj, 'lecturer') else obj.course
+        return course.lecturer_id == request.user.id

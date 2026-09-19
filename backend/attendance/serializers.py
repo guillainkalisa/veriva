@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from .models import Course, AttendanceSession, AttendanceRecord, CampusEntry
+from .models import Course, AttendanceSession, AttendanceRecord, CampusEntry, CourseEnrollment
+from campus.models import Gate
 from students.serializers import StudentListSerializer
-from accounts.serializers import UserSerializer
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -9,7 +9,19 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'name', 'code', 'lecturer', 'lecturer_name', 'department', 'is_active']
+        fields = [
+            'id', 'name', 'code', 'lecturer', 'lecturer_name', 'department',
+            'is_active', 'min_attendance_percent',
+        ]
+
+
+class CourseEnrollmentSerializer(serializers.ModelSerializer):
+    student_detail = StudentListSerializer(source='student', read_only=True)
+
+    class Meta:
+        model = CourseEnrollment
+        fields = ['id', 'course', 'student', 'student_detail', 'is_active', 'enrolled_at']
+        read_only_fields = ['enrolled_at']
 
 
 class AttendanceSessionSerializer(serializers.ModelSerializer):
@@ -23,7 +35,7 @@ class AttendanceSessionSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'course', 'course_name', 'course_code', 'date', 'start_time',
             'end_time', 'room', 'created_by', 'created_by_name', 'is_open',
-            'attendance_count', 'created_at'
+            'track_mode', 'attendance_count', 'created_at'
         ]
         read_only_fields = ['created_at']
 
@@ -34,12 +46,14 @@ class AttendanceSessionSerializer(serializers.ModelSerializer):
 class AttendanceRecordSerializer(serializers.ModelSerializer):
     student_detail = StudentListSerializer(source='student', read_only=True)
     session_info = serializers.SerializerMethodField()
+    counted_minutes = serializers.ReadOnlyField()
 
     class Meta:
         model = AttendanceRecord
         fields = [
             'id', 'session', 'session_info', 'student', 'student_detail',
-            'check_in_time', 'method', 'nfc_card', 'recorded_by'
+            'check_in_time', 'check_out_time', 'counted_minutes', 'method',
+            'nfc_card', 'recorded_by'
         ]
         read_only_fields = ['check_in_time']
 
@@ -54,16 +68,21 @@ class NFCAttendanceSerializer(serializers.Serializer):
 
 class CampusEntrySerializer(serializers.ModelSerializer):
     student_detail = StudentListSerializer(source='student', read_only=True)
+    gate_name = serializers.CharField(source='gate.name', read_only=True)
 
     class Meta:
         model = CampusEntry
         fields = [
             'id', 'student', 'student_detail', 'nfc_card', 'entry_time',
-            'exit_time', 'gate', 'status'
+            'exit_time', 'gate', 'gate_name', 'status'
         ]
         read_only_fields = ['entry_time']
 
 
 class NFCCampusEntrySerializer(serializers.Serializer):
     nfc_uid = serializers.CharField()
-    gate = serializers.CharField(required=False, default='Main Gate')
+    # Which gate the tap is for. Optional: a guard assigned to exactly one gate
+    # doesn't need to send it; the view resolves and enforces it.
+    gate = serializers.PrimaryKeyRelatedField(
+        queryset=Gate.objects.filter(is_active=True), required=False, allow_null=True,
+    )

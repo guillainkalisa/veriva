@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 from .permissions import IsAdmin
 from .serializers import (
-    CustomTokenObtainPairSerializer, UserSerializer,
+    CustomTokenObtainPairSerializer, UserSerializer, MeSerializer,
     UserCreateSerializer, ChangePasswordSerializer
 )
 
@@ -30,7 +30,7 @@ class LogoutView(APIView):
 
 
 class MeView(generics.RetrieveUpdateAPIView):
-    serializer_class = UserSerializer
+    serializer_class = MeSerializer
 
     def get_object(self):
         return self.request.user

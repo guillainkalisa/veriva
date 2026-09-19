@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { createDevice, updateDevice } from '../../api/devices'
 import { getStudents } from '../../api/students'
 import { getDirectorates } from '../../api/campus'
+import Spinner from '../../components/Spinner'
 
 export default function DeviceForm({ device, onSuccess }) {
   const [form, setForm] = useState({
@@ -112,7 +113,7 @@ export default function DeviceForm({ device, onSuccess }) {
       )}
 
       <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
-        {loading ? 'Saving...' : device ? 'Update Device' : 'Register Device'}
+        {loading && <Spinner size={14} />} {loading ? 'Saving...' : device ? 'Update Device' : 'Register Device'}
       </button>
     </form>
   )

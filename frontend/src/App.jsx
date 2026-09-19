@@ -9,9 +9,11 @@ import Devices from './pages/devices/Devices'
 import Attendance from './pages/attendance/Attendance'
 import CampusEntries from './pages/campus/CampusEntries'
 import Courses from './pages/courses/Courses'
+import Gates from './pages/gates/Gates'
 import Incidents from './pages/verification/Incidents'
 import VerifyDevice from './pages/verification/VerifyDevice'
 import NFCStation from './pages/nfc/NFCStation'
+import SessionScan from './pages/attendance/SessionScan'
 import { NAV } from './nav'
 
 const PAGES = {
@@ -20,6 +22,7 @@ const PAGES = {
   '/devices': <Devices />,
   '/verify': <VerifyDevice />,
   '/campus': <CampusEntries />,
+  '/gates': <Gates />,
   '/attendance': <Attendance />,
   '/courses': <Courses />,
   '/incidents': <Incidents />,
@@ -60,6 +63,15 @@ function AppRoutes() {
         <RequireAuth>
           <RequireRole roles={['admin', 'security']}>
             <NFCStation />
+          </RequireRole>
+        </RequireAuth>
+      } />
+
+      {/* Full-screen class session check-in — no sidebar */}
+      <Route path="/attendance/scan" element={
+        <RequireAuth>
+          <RequireRole roles={['admin', 'lecturer']}>
+            <SessionScan />
           </RequireRole>
         </RequireAuth>
       } />

@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader'
 import SearchBar from '../../components/SearchBar'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
+import LoadingState from '../../components/LoadingState'
 import StudentForm from './StudentForm'
 import NFCAssignForm from './NFCAssignForm'
 import { getStudents, deleteStudent } from '../../api/students'
@@ -67,7 +68,7 @@ export default function Students() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
+          <LoadingState />
         ) : students.length === 0 ? (
           <EmptyState
             icon={Users}
@@ -79,7 +80,7 @@ export default function Students() {
             )}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto animate-fade-in">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>

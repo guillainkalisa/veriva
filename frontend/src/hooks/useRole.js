@@ -11,8 +11,11 @@ export function useRole() {
   return {
     role,
     roleLabel: ROLE_LABEL[role] ?? 'Unknown',
+    assignedGates: user?.assigned_gates ?? [],
+
     isAdmin: role === 'admin',
-    isSecurity: role === 'security',
+    isSecurityChief: role === 'security_chief',
+    isSecurityGuard: role === 'security',
     isLecturer: role === 'lecturer',
 
     canManageUsers:       is('admin'),
@@ -20,17 +23,20 @@ export function useRole() {
     canManageStudents:    is('admin'),
     canManageDevices:     is('admin'),
     canManageLoans:       is('admin'),
+    canManageGates:       is('admin'),
 
     canManageCourses:     is('admin', 'lecturer'),
     canManageAttendance:  is('admin', 'lecturer'),
     canRecordClassNFC:    is('admin', 'lecturer'),
 
-    canVerifyDevice:      is('admin', 'security'),
-    canRunNFCStation:     is('admin', 'security'),
-    canRecordCampusNFC:   is('admin', 'security'),
-    canViewCampusEntries: is('admin', 'security'),
-    canLookupCard:        is('admin', 'security'),
-    canManageIncidents:   is('admin', 'security'),
-    canResolveIncidents:  is('admin'),
+    canVerifyDevice:      is('admin', 'security_chief', 'security'),
+    canRunNFCStation:     is('admin', 'security_chief', 'security'),
+    canRecordCampusNFC:   is('admin', 'security_chief', 'security'),
+    canViewCampusEntries: is('admin', 'security_chief', 'security'),
+    canLookupCard:        is('admin', 'security_chief', 'security'),
+    canManageIncidents:   is('admin', 'security_chief', 'security'),
+    canResolveIncidents:  is('admin', 'security_chief'),
+
+    seesAllGates:         is('admin', 'security_chief'),
   }
 }

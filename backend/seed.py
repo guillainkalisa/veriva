@@ -11,7 +11,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from accounts.models import CustomUser
-from campus.models import Directorate
+from campus.models import Directorate, Gate
 from students.models import College, School, Department, Program, Student, NFCCard
 from devices.models import Device
 from devices.utils import generate_qr_code
@@ -36,15 +36,32 @@ def upsert_user(username, password, **fields):
     return user
 
 
+# --- Gates (an admin creates these per institution) ------------------------
+print('Gates')
+gates = {
+    g['code']: get_or_create(Gate, code=g['code'], defaults=g)
+    for g in [
+        dict(code='MAIN', name='Main Gate', location='Front entrance, KN 3 Rd'),
+        dict(code='WEST', name='West Gate', location='Near the sports ground'),
+        dict(code='LIB', name='Library Gate', location='Beside the library block'),
+    ]
+}
+
+
 # --- Users -------------------------------------------------------------------
 print('Users')
 admin = upsert_user('admin', 'admin1234', email='admin@veriva.ur.ac.rw',
                     first_name='System', last_name='Administrator', role='admin',
                     is_staff=True, is_superuser=True)
+chief = upsert_user('chief01', 'chief1234', email='chief@veriva.ur.ac.rw',
+                    first_name='Patrick', last_name='Habyarimana', role='security_chief')
 security = upsert_user('security01', 'security1234', email='security@veriva.ur.ac.rw',
                        first_name='Jean', last_name='Mutabazi', role='security')
 lecturer = upsert_user('lecturer01', 'lecturer1234', email='lecturer@veriva.ur.ac.rw',
                        first_name='Marie', last_name='Uwimana', role='lecturer')
+
+# Guard Jean covers the Main and West gates.
+security.assigned_gates.set([gates['MAIN'], gates['WEST']])
 
 
 # --- Campus administration -------------------------------------------------
@@ -137,4 +154,7 @@ for code, name in courses:
 
 
 print('\nDone. Logins:')
-print('  admin / admin1234   security01 / security1234   lecturer01 / lecturer1234')
+print('  admin / admin1234        (full access)')
+print('  chief01 / chief1234      (security chief - all gates)')
+print('  security01 / security1234 (guard - Main + West gates)')
+print('  lecturer01 / lecturer1234 (courses + attendance)')

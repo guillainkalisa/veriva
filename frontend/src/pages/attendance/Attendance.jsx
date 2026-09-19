@@ -4,6 +4,8 @@ import toast from 'react-hot-toast'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
+import LoadingState from '../../components/LoadingState'
+import Spinner from '../../components/Spinner'
 import { getSessions, createSession, closeSession, getSessionRecords, getCourses } from '../../api/attendance'
 import { useRole } from '../../hooks/useRole'
 
@@ -15,7 +17,7 @@ export default function Attendance() {
   const [showForm, setShowForm] = useState(false)
   const [expanded, setExpanded] = useState(null)
   const [records, setRecords] = useState({})
-  const [form, setForm] = useState({ course: '', date: new Date().toISOString().slice(0, 10), start_time: '', room: '' })
+  const [form, setForm] = useState({ course: '', date: new Date().toISOString().slice(0, 10), start_time: '', room: '', track_mode: 'single' })
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
@@ -74,13 +76,13 @@ export default function Attendance() {
       />
 
       {loading ? (
-        <div className="card p-8 text-center text-gray-400 text-sm">Loading...</div>
+        <div className="card"><LoadingState /></div>
       ) : sessions.length === 0 ? (
         <EmptyState icon={CalendarCheck} message="No attendance sessions yet." action={
           canManageAttendance && <button className="btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create Session</button>
         } />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-fade-in">
           {sessions.map((s) => (
             <div key={s.id} className="card overflow-hidden">
               <div
@@ -94,6 +96,7 @@ export default function Attendance() {
                     <span className={s.is_open ? 'badge-green' : 'badge-gray'}>
                       {s.is_open ? 'Open' : 'Closed'}
                     </span>
+                    <span className="badge-blue">{s.track_mode === 'double' ? 'Tap in & out' : 'Tap in only'}</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
                     {s.date} &middot; {s.start_time}{s.end_time ? ` - ${s.end_time}` : ''} &middot; Room {s.room} &middot; {s.attendance_count} students
@@ -115,7 +118,7 @@ export default function Attendance() {
               {expanded === s.id && (
                 <div className="border-t border-gray-100 p-4">
                   {!records[s.id] ? (
-                    <p className="text-sm text-gray-400">Loading records...</p>
+                    <p className="flex items-center gap-2 text-sm text-gray-400"><Spinner size={14} /> Loading records...</p>
                   ) : records[s.id].length === 0 ? (
                     <p className="text-sm text-gray-400 text-center py-4">No attendance records yet.</p>
                   ) : (
@@ -125,6 +128,8 @@ export default function Attendance() {
                           <th className="text-left pb-2">Student</th>
                           <th className="text-left pb-2">Reg. Number</th>
                           <th className="text-left pb-2">Check-in</th>
+                          {s.track_mode === 'double' && <th className="text-left pb-2">Check-out</th>}
+                          <th className="text-left pb-2">Counted</th>
                           <th className="text-left pb-2">Method</th>
                         </tr>
                       </thead>
@@ -134,6 +139,14 @@ export default function Attendance() {
                             <td className="py-2 font-medium text-gray-800">{r.student_detail?.full_name}</td>
                             <td className="py-2 font-mono text-xs text-gray-500">{r.student_detail?.registration_number}</td>
                             <td className="py-2 text-xs text-gray-500">{new Date(r.check_in_time).toLocaleTimeString()}</td>
+                            {s.track_mode === 'double' && (
+                              <td className="py-2 text-xs text-gray-500">
+                                {r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString() : '—'}
+                              </td>
+                            )}
+                            <td className="py-2 text-xs text-gray-500">
+                              {s.is_open ? '—' : `${r.counted_minutes} min`}
+                            </td>
                             <td className="py-2">
                               <span className={r.method === 'nfc' ? 'badge-blue' : 'badge-gray'}>{r.method}</span>
                             </td>
@@ -172,8 +185,15 @@ export default function Attendance() {
             <label className="label">Room *</label>
             <input className="input" value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} required placeholder="e.g. Room 101" />
           </div>
+          <div>
+            <label className="label">Tap Tracking *</label>
+            <select className="input" value={form.track_mode} onChange={(e) => setForm({ ...form, track_mode: e.target.value })}>
+              <option value="single">Single tap — tap in counts the full session</option>
+              <option value="double">Double tap — must tap in and out</option>
+            </select>
+          </div>
           <button type="submit" disabled={saving} className="btn-primary w-full justify-center">
-            {saving ? 'Creating...' : 'Create Session'}
+            {saving && <Spinner size={14} />} {saving ? 'Creating...' : 'Create Session'}
           </button>
         </form>
       </Modal>

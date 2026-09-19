@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { createStudent, updateStudent } from '../../api/students'
 import { getColleges, getSchools, getDepartments, getPrograms } from '../../api/organization'
+import Spinner from '../../components/Spinner'
 
 const YEARS = [1, 2, 3, 4, 5]
 
@@ -144,7 +145,7 @@ export default function StudentForm({ student, onSuccess }) {
 
       <div className="flex gap-3 pt-2">
         <button type="submit" disabled={loading} className="btn-primary flex-1 justify-center">
-          {loading ? 'Saving...' : student ? 'Update Student' : 'Create Student'}
+          {loading && <Spinner size={14} />} {loading ? 'Saving...' : student ? 'Update Student' : 'Create Student'}
         </button>
       </div>
     </form>

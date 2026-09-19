@@ -4,7 +4,7 @@ __pycache__/
 *.egg-info/
 backend/venv/
 backend/.env
-backend/db.sqlite3
+*.sqlite3
 backend/staticfiles/
 backend/media/*
 !backend/media/.gitkeep

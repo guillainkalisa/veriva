@@ -17,6 +17,15 @@ export default {
           900: '#1e3a8a',
         },
       },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: 0, transform: 'translateY(2px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.2s ease-out',
+      },
     },
   },
   plugins: [],

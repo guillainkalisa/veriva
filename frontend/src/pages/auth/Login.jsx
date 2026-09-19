@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ShieldAlert, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../hooks/useAuth'
+import Spinner from '../../components/Spinner'
 
 export default function Login() {
   const { login } = useAuth()
@@ -73,7 +74,7 @@ export default function Login() {
               </div>
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-2.5 mt-2">
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading && <Spinner size={16} />} {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
           <p className="text-center text-xs text-gray-400 mt-6">

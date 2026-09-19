@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CreditCard, ShieldOff, AlertTriangle, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { assignNFC, setNFCStatus } from '../../api/students'
+import Spinner from '../../components/Spinner'
 
 export default function NFCAssignForm({ student, onSuccess }) {
   const nfc = student.nfc_card
@@ -91,7 +92,7 @@ export default function NFCAssignForm({ student, onSuccess }) {
             <p className="text-xs text-gray-400 mt-1">Enter the unique ID from the NFC card.</p>
           </div>
           <button type="submit" disabled={loading || !uid} className="btn-primary w-full justify-center">
-            <CreditCard size={15} /> {loading ? 'Assigning...' : 'Assign NFC Card'}
+            {loading ? <Spinner size={15} /> : <CreditCard size={15} />} {loading ? 'Assigning...' : 'Assign NFC Card'}
           </button>
         </form>
       )}

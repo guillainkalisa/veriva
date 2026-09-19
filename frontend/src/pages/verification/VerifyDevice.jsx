@@ -3,6 +3,7 @@ import { ScanLine, CheckCircle, XCircle, AlertTriangle, User, Laptop, ArrowRight
 import toast from 'react-hot-toast'
 import { verifyDevice } from '../../api/devices'
 import PageHeader from '../../components/PageHeader'
+import Spinner from '../../components/Spinner'
 
 export default function VerifyDevice() {
   const [qrInput, setQrInput] = useState('')
@@ -72,7 +73,7 @@ export default function VerifyDevice() {
             )}
 
             <button type="submit" disabled={loading || !qrInput.trim()} className="btn-primary w-full justify-center py-3">
-              <ScanLine size={16} />
+              {loading ? <Spinner size={16} /> : <ScanLine size={16} />}
               {loading ? 'Verifying...' : 'Verify Device'}
             </button>
           </form>
