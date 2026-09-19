@@ -39,10 +39,18 @@ class ProgramSerializer(serializers.ModelSerializer):
 
 
 class NFCCardSerializer(serializers.ModelSerializer):
+    decrypted_registration_number = serializers.SerializerMethodField()
+
     class Meta:
         model = NFCCard
-        fields = ['id', 'uid', 'issued_date', 'status', 'deactivated_at', 'deactivation_reason', 'is_active']
+        fields = [
+            'id', 'uid', 'issued_date', 'status', 'deactivated_at',
+            'deactivation_reason', 'is_active', 'decrypted_registration_number',
+        ]
         read_only_fields = ['issued_date', 'deactivated_at', 'is_active']
+
+    def get_decrypted_registration_number(self, obj):
+        return obj.decrypted_registration_number()
 
 
 class StudentSerializer(serializers.ModelSerializer):
@@ -130,17 +138,6 @@ class StudentCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Programme does not belong to the selected department.')
 
         return data
-
-
-class NFCCardCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NFCCard
-        fields = ['uid']
-
-    def validate_uid(self, value):
-        if NFCCard.objects.filter(uid=value, status=NFCCard.STATUS_ACTIVE).exists():
-            raise serializers.ValidationError('This NFC UID is already assigned to an active card.')
-        return value
 
 
 class NFCCardStatusSerializer(serializers.Serializer):

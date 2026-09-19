@@ -84,6 +84,7 @@ class DashboardStatsView(APIView):
                     if row['required_minutes'] and not row['eligible']:
                         at_risk.append({
                             'student_name': row['student'].full_name,
+                            'registration_number': row['student'].registration_number,
                             'course_code': course.code,
                             'percent': row['percent'],
                             'required_percent': course.min_attendance_percent,

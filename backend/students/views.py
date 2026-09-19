@@ -8,9 +8,10 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from accounts.permissions import IsAdmin, IsAdminOrSecurity, IsAdminOrReadOnly
 
 from .models import Student, NFCCard, College, School, Department, Program
+from .crypto import encrypt_registration_number
 from .serializers import (
     StudentSerializer, StudentListSerializer, StudentCreateUpdateSerializer,
-    NFCCardSerializer, NFCCardCreateSerializer, NFCCardStatusSerializer,
+    NFCCardSerializer, NFCCardStatusSerializer,
     CollegeSerializer, SchoolSerializer, DepartmentSerializer, ProgramSerializer
 )
 
@@ -87,20 +88,19 @@ class StudentViewSet(ModelViewSet):
                 {'detail': 'Student already has an active NFC card.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        serializer = NFCCardCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
 
+        token = encrypt_registration_number(student.registration_number)
         if hasattr(student, 'nfc_card'):
-            nfc = student.nfc_card
-            nfc.uid = serializer.validated_data['uid']
-            nfc.status = NFCCard.STATUS_ACTIVE
-            nfc.deactivated_at = None
-            nfc.deactivation_reason = ''
-            nfc.save()
+            card = student.nfc_card
+            card.uid = token
+            card.status = NFCCard.STATUS_ACTIVE
+            card.deactivated_at = None
+            card.deactivation_reason = ''
+            card.save()
         else:
-            NFCCard.objects.create(student=student, uid=serializer.validated_data['uid'])
+            card = NFCCard.objects.create(student=student, uid=token)
 
-        return Response({'detail': 'NFC card assigned successfully.'}, status=status.HTTP_201_CREATED)
+        return Response(NFCCardSerializer(card).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'], url_path='nfc-status', permission_classes=[IsAdmin])
     def nfc_status(self, request, pk=None):

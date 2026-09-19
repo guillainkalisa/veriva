@@ -12,6 +12,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-veriva-dev-key-change-in-p
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# Encrypts NFC card tokens (students/crypto.py). No insecure dev fallback like
+# SECRET_KEY's, since this gates physical access control - must be set explicitly.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+NFC_ENCRYPTION_KEY = os.getenv('NFC_ENCRYPTION_KEY', '')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

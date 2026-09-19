@@ -149,7 +149,9 @@ class NFCCard(models.Model):
     ]
 
     student = models.OneToOneField(Student, on_delete=models.CASCADE, related_name='nfc_card')
-    uid = models.CharField(max_length=100, unique=True, db_index=True)
+    # Holds the encrypted registration number written to the physical tag
+    # (see students/crypto.py). Widened past a raw uid's length for the Fernet token.
+    uid = models.CharField(max_length=255, unique=True, db_index=True)
     issued_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE, db_index=True)
     deactivated_at = models.DateTimeField(null=True, blank=True)
@@ -180,3 +182,13 @@ class NFCCard(models.Model):
     @property
     def is_active(self):
         return self.status == self.STATUS_ACTIVE
+
+    def decrypted_registration_number(self):
+        """The registration number encoded in this card's token, or None for
+        a legacy card issued before encryption (its uid won't decrypt)."""
+        from .crypto import decrypt_nfc_token
+        from cryptography.fernet import InvalidToken
+        try:
+            return decrypt_nfc_token(self.uid)
+        except InvalidToken:
+            return None
