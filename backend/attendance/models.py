@@ -4,7 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from accounts.models import CustomUser
-from students.models import Student, NFCCard
+from students.models import Student, NFCCard, Department
 from campus.models import Gate
 
 
@@ -14,7 +14,9 @@ class Course(models.Model):
     lecturer = models.ForeignKey(
         CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='courses'
     )
-    department = models.CharField(max_length=200)
+    department = models.ForeignKey(
+        Department, on_delete=models.PROTECT, null=True, blank=True, related_name='courses'
+    )
     is_active = models.BooleanField(default=True)
     # Minimum share of class time a student must accumulate to sit the exam.
     min_attendance_percent = models.PositiveSmallIntegerField(

@@ -6,13 +6,22 @@ from students.serializers import StudentListSerializer
 
 class CourseSerializer(serializers.ModelSerializer):
     lecturer_name = serializers.CharField(source='lecturer.get_full_name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
 
     class Meta:
         model = Course
         fields = [
-            'id', 'name', 'code', 'lecturer', 'lecturer_name', 'department',
+            'id', 'name', 'code', 'lecturer', 'lecturer_name', 'department', 'department_name',
             'is_active', 'min_attendance_percent',
         ]
+
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get('request')
+        if request and getattr(request.user, 'role', None) == 'lecturer':
+            fields['department'].read_only = True
+            fields['lecturer'].read_only = True
+        return fields
 
 
 class CourseEnrollmentSerializer(serializers.ModelSerializer):

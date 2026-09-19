@@ -7,6 +7,8 @@ class CustomUser(AbstractUser):
     ROLE_SECURITY_CHIEF = 'security_chief'
     ROLE_SECURITY = 'security'
     ROLE_LECTURER = 'lecturer'
+    ROLE_HOD = 'hod'
+    ROLE_DEAN = 'dean'
     ROLE_STUDENT = 'student'
 
     ROLE_CHOICES = [
@@ -14,6 +16,8 @@ class CustomUser(AbstractUser):
         (ROLE_SECURITY_CHIEF, 'Security Chief'),
         (ROLE_SECURITY, 'Security Guard'),
         (ROLE_LECTURER, 'Lecturer'),
+        (ROLE_HOD, 'Head of Department'),
+        (ROLE_DEAN, 'Dean'),
         (ROLE_STUDENT, 'Student'),
     ]
 
@@ -21,6 +25,13 @@ class CustomUser(AbstractUser):
     phone = models.CharField(max_length=20, blank=True)
     # Guards are scoped to the gates they are assigned to. Empty for other roles.
     assigned_gates = models.ManyToManyField('campus.Gate', blank=True, related_name='guards')
+    # A HoD is scoped to one department; a Dean to one school. Empty for other roles.
+    assigned_department = models.ForeignKey(
+        'students.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='hod_users'
+    )
+    assigned_school = models.ForeignKey(
+        'students.School', on_delete=models.SET_NULL, null=True, blank=True, related_name='dean_users'
+    )
 
     def __str__(self):
         return f'{self.get_full_name()} ({self.role})'
@@ -40,6 +51,14 @@ class CustomUser(AbstractUser):
     @property
     def is_lecturer(self):
         return self.role == self.ROLE_LECTURER
+
+    @property
+    def is_hod(self):
+        return self.role == self.ROLE_HOD
+
+    @property
+    def is_dean(self):
+        return self.role == self.ROLE_DEAN
 
     @property
     def sees_all_gates(self):

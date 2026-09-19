@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from campus.models import Gate
+from students.models import Department, School
 from .models import CustomUser
 
 
@@ -26,6 +27,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'role': self.user.role,
             'phone': self.user.phone,
             'assigned_gates': gate_summary(self.user),
+            'assigned_department': self.user.assigned_department_id,
+            'assigned_department_name': self.user.assigned_department.name if self.user.assigned_department else None,
+            'assigned_school': self.user.assigned_school_id,
+            'assigned_school_name': self.user.assigned_school.name if self.user.assigned_school else None,
         }
         return data
 
@@ -35,12 +40,23 @@ class UserSerializer(serializers.ModelSerializer):
         many=True, queryset=Gate.objects.all(), required=False
     )
     assigned_gate_names = serializers.SerializerMethodField()
+    assigned_department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=False, allow_null=True
+    )
+    assigned_department_name = serializers.CharField(source='assigned_department.name', read_only=True)
+    assigned_school = serializers.PrimaryKeyRelatedField(
+        queryset=School.objects.all(), required=False, allow_null=True
+    )
+    assigned_school_name = serializers.CharField(source='assigned_school.name', read_only=True)
 
     class Meta:
         model = CustomUser
         fields = [
             'id', 'username', 'first_name', 'last_name', 'email', 'role', 'phone',
-            'assigned_gates', 'assigned_gate_names', 'is_active', 'date_joined',
+            'assigned_gates', 'assigned_gate_names',
+            'assigned_department', 'assigned_department_name',
+            'assigned_school', 'assigned_school_name',
+            'is_active', 'date_joined',
         ]
         read_only_fields = ['date_joined']
 
@@ -52,14 +68,21 @@ class MeSerializer(serializers.ModelSerializer):
     """The signed-in user editing their own profile. Role, gates and status are
     read-only here — only an admin can change those (via /auth/users/)."""
     assigned_gate_names = serializers.SerializerMethodField()
+    assigned_department_name = serializers.CharField(source='assigned_department.name', read_only=True)
+    assigned_school_name = serializers.CharField(source='assigned_school.name', read_only=True)
 
     class Meta:
         model = CustomUser
         fields = [
             'id', 'username', 'first_name', 'last_name', 'email', 'role', 'phone',
-            'assigned_gate_names', 'is_active', 'date_joined',
+            'assigned_gate_names', 'assigned_department', 'assigned_department_name',
+            'assigned_school', 'assigned_school_name', 'is_active', 'date_joined',
         ]
-        read_only_fields = ['id', 'username', 'email', 'role', 'assigned_gate_names', 'is_active', 'date_joined']
+        read_only_fields = [
+            'id', 'username', 'email', 'role', 'assigned_gate_names',
+            'assigned_department', 'assigned_department_name',
+            'assigned_school', 'assigned_school_name', 'is_active', 'date_joined',
+        ]
 
     def get_assigned_gate_names(self, obj):
         return [g.name for g in obj.assigned_gates.all()]
@@ -70,10 +93,19 @@ class UserCreateSerializer(serializers.ModelSerializer):
     assigned_gates = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Gate.objects.all(), required=False
     )
+    assigned_department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=False, allow_null=True
+    )
+    assigned_school = serializers.PrimaryKeyRelatedField(
+        queryset=School.objects.all(), required=False, allow_null=True
+    )
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'first_name', 'last_name', 'email', 'role', 'phone', 'password', 'assigned_gates']
+        fields = [
+            'username', 'first_name', 'last_name', 'email', 'role', 'phone', 'password',
+            'assigned_gates', 'assigned_department', 'assigned_school',
+        ]
 
     def create(self, validated_data):
         password = validated_data.pop('password')

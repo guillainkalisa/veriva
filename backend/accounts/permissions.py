@@ -3,7 +3,7 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 # Operational roles. `student` accounts exist in the enum but have no
 # self-service surface yet, so they get no API access.
 SECURITY_ROLES = {'admin', 'security_chief', 'security'}
-STAFF_ROLES = {'admin', 'security_chief', 'security', 'lecturer'}
+STAFF_ROLES = {'admin', 'security_chief', 'security', 'lecturer', 'hod', 'dean'}
 
 
 def role_of(request):
@@ -81,3 +81,40 @@ class IsCourseOwnerOrAdmin(RolePermission):
             return role in self.read_roles
         course = obj if hasattr(obj, 'lecturer') else obj.course
         return course.lecturer_id == request.user.id
+
+
+class IsCourseOwnerOrAdminStrict(RolePermission):
+    """Like IsCourseOwnerOrAdmin, but with no 'any staff can read' shortcut -
+    even GET requires exact ownership. For nested per-course student data
+    (roster, enrollable students) where any-lecturer read would leak other
+    lecturers' students."""
+    write_roles = {'admin', 'lecturer'}
+
+    def has_object_permission(self, request, view, obj):
+        role = role_of(request)
+        if role == 'admin':
+            return True
+        course = obj if hasattr(obj, 'lecturer') else obj.course
+        return course.lecturer_id == request.user.id
+
+
+class IsCourseManagerOrAdmin(RolePermission):
+    """Who may assign a course's lecturer/department: admin anywhere; a
+    lecturer on their own course; a HoD within their assigned department; a
+    dean within their assigned school. Any staff role may read."""
+    write_roles = {'admin', 'lecturer', 'hod', 'dean'}
+    read_roles = STAFF_ROLES
+
+    def has_object_permission(self, request, view, obj):
+        role = role_of(request)
+        if role == 'admin':
+            return True
+        if request.method in SAFE_METHODS:
+            return role in self.read_roles
+        if role == 'lecturer':
+            return obj.lecturer_id == request.user.id
+        if role == 'hod':
+            return obj.department_id is not None and obj.department_id == request.user.assigned_department_id
+        if role == 'dean':
+            return obj.department_id is not None and obj.department.school_id == request.user.assigned_school_id
+        return False

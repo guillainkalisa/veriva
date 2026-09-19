@@ -6,10 +6,11 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.db.models import Q
 from django.utils import timezone
 from accounts.permissions import (
     IsStaff, IsAdminOrLecturer, IsAdminOrSecurity, IsCourseOwnerOrAdmin,
-    IsAdminOrLecturerOrReadOnly,
+    IsCourseOwnerOrAdminStrict, IsAdminOrLecturerOrReadOnly, IsCourseManagerOrAdmin,
 )
 
 from .models import Course, AttendanceSession, AttendanceRecord, CampusEntry, CourseEnrollment
@@ -19,24 +20,27 @@ from .serializers import (
     CampusEntrySerializer, NFCCampusEntrySerializer, CourseEnrollmentSerializer,
 )
 from students.models import NFCCard, Student
-from students.serializers import StudentSerializer
+from students.serializers import StudentSerializer, StudentMinimalSerializer
 
 
 class CourseViewSet(ModelViewSet):
-    queryset = Course.objects.select_related('lecturer').all()
+    queryset = Course.objects.select_related('lecturer', 'department', 'department__school').all()
     serializer_class = CourseSerializer
-    permission_classes = [IsCourseOwnerOrAdmin]
+    permission_classes = [IsCourseManagerOrAdmin]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['is_active', 'department', 'lecturer']
-    search_fields = ['name', 'code', 'department']
+    search_fields = ['name', 'code', 'department__name']
 
     def perform_create(self, serializer):
-        if self.request.user.role == 'lecturer':
+        role = self.request.user.role
+        if role == 'lecturer':
             serializer.save(lecturer=self.request.user)
+        elif role == 'hod':
+            serializer.save(department=self.request.user.assigned_department)
         else:
             serializer.save()
 
-    @action(detail=True, methods=['post'], url_path='enroll')
+    @action(detail=True, methods=['post'], url_path='enroll', permission_classes=[IsCourseOwnerOrAdmin])
     def enroll(self, request, pk=None):
         course = self.get_object()
         student_ids = request.data.get('student_ids', [])
@@ -48,7 +52,7 @@ class CourseViewSet(ModelViewSet):
                 enrollment.save(update_fields=['is_active'])
         return Response({'enrolled': len(valid_ids), 'skipped': len(student_ids) - len(valid_ids)})
 
-    @action(detail=True, methods=['post'], url_path='unenroll')
+    @action(detail=True, methods=['post'], url_path='unenroll', permission_classes=[IsCourseOwnerOrAdmin])
     def unenroll(self, request, pk=None):
         course = self.get_object()
         student_ids = request.data.get('student_ids', [])
@@ -57,7 +61,18 @@ class CourseViewSet(ModelViewSet):
         ).update(is_active=False)
         return Response({'unenrolled': updated})
 
-    @action(detail=True, methods=['get'], url_path='roster')
+    @action(detail=True, methods=['get'], url_path='enrollable-students', permission_classes=[IsCourseOwnerOrAdminStrict])
+    def enrollable_students(self, request, pk=None):
+        course = self.get_object()
+        search = request.query_params.get('q', '').strip()
+        enrolled_ids = course.enrollments.filter(is_active=True).values_list('student_id', flat=True)
+        qs = Student.objects.filter(is_active=True).exclude(id__in=enrolled_ids)
+        if search:
+            qs = qs.filter(Q(full_name__icontains=search) | Q(registration_number__icontains=search))
+        qs = qs.select_related('program')[:20]
+        return Response(StudentMinimalSerializer(qs, many=True).data)
+
+    @action(detail=True, methods=['get'], url_path='roster', permission_classes=[IsCourseOwnerOrAdminStrict])
     def roster(self, request, pk=None):
         course = self.get_object()
         from .services import course_eligibility
@@ -72,13 +87,18 @@ class CourseViewSet(ModelViewSet):
 
 
 class AttendanceSessionViewSet(ModelViewSet):
-    queryset = AttendanceSession.objects.select_related('course', 'created_by').all()
     serializer_class = AttendanceSessionSerializer
     permission_classes = [IsCourseOwnerOrAdmin]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['course', 'date', 'is_open']
     search_fields = ['course__name', 'course__code', 'room']
     ordering_fields = ['date', 'start_time', 'created_at']
+
+    def get_queryset(self):
+        qs = AttendanceSession.objects.select_related('course', 'created_by')
+        if self.request.user.role == 'lecturer':
+            qs = qs.filter(course__lecturer=self.request.user)
+        return qs
 
     def perform_create(self, serializer):
         course = serializer.validated_data['course']
@@ -101,13 +121,18 @@ class AttendanceSessionViewSet(ModelViewSet):
 
 
 class AttendanceRecordViewSet(ModelViewSet):
-    queryset = AttendanceRecord.objects.select_related('session', 'student', 'nfc_card').all()
     serializer_class = AttendanceRecordSerializer
     permission_classes = [IsAdminOrLecturerOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['session', 'student', 'method']
     search_fields = ['student__full_name', 'student__registration_number']
     ordering_fields = ['check_in_time']
+
+    def get_queryset(self):
+        qs = AttendanceRecord.objects.select_related('session', 'student', 'nfc_card')
+        if self.request.user.role == 'lecturer':
+            qs = qs.filter(session__course__lecturer=self.request.user)
+        return qs
 
 
 class NFCAttendanceView(APIView):
@@ -136,6 +161,12 @@ class NFCAttendanceView(APIView):
 
         if not session.is_open:
             return Response({'detail': 'This attendance session is closed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.user.role == 'lecturer' and session.course.lecturer_id != request.user.id:
+            return Response(
+                {'detail': 'You can only record attendance for your own course sessions.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         if not CourseEnrollment.objects.filter(
             course=session.course, student=card.student, is_active=True

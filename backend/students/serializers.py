@@ -114,6 +114,15 @@ class StudentListSerializer(serializers.ModelSerializer):
         return None
 
 
+class StudentMinimalSerializer(serializers.ModelSerializer):
+    """For finding someone to enroll, not for browsing their record."""
+    program_name = serializers.CharField(source='program.name', read_only=True)
+
+    class Meta:
+        model = Student
+        fields = ['id', 'full_name', 'registration_number', 'program_name', 'year_of_study']
+
+
 class StudentCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student

@@ -9,7 +9,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ['role', 'is_active']
     filter_horizontal = UserAdmin.filter_horizontal + ('assigned_gates',)
     fieldsets = UserAdmin.fieldsets + (
-        ('VERIVA', {'fields': ('role', 'phone', 'assigned_gates')}),
+        ('VERIVA', {'fields': ('role', 'phone', 'assigned_gates', 'assigned_department', 'assigned_school')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         ('VERIVA', {'fields': ('role', 'phone')}),

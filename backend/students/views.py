@@ -69,9 +69,15 @@ class StudentViewSet(ModelViewSet):
     ordering = ['-admission_date']
 
     def get_queryset(self):
-        return Student.objects.select_related(
+        qs = Student.objects.select_related(
             'college', 'school', 'department', 'program', 'nfc_card'
         )
+        if self.request.user.role == 'lecturer':
+            qs = qs.filter(
+                course_enrollments__course__lecturer=self.request.user,
+                course_enrollments__is_active=True,
+            ).distinct()
+        return qs
 
     def get_serializer_class(self):
         if self.action == 'list':

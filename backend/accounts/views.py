@@ -1,3 +1,4 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -39,6 +40,8 @@ class MeView(generics.RetrieveUpdateAPIView):
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = CustomUser.objects.all().order_by('-date_joined')
     permission_classes = [IsAdmin]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['role', 'is_active']
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
