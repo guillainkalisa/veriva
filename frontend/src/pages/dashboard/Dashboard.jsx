@@ -80,6 +80,7 @@ export default function Dashboard() {
                     <div key={i} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{row.student_name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5 font-mono">{row.registration_number}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{row.course_code} &middot; needs {row.required_percent}%</p>
                       </div>
                       <span className="badge-red">{row.percent}%</span>

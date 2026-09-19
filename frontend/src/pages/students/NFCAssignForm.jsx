@@ -1,24 +1,48 @@
 import { useState } from 'react'
-import { CreditCard, ShieldOff, AlertTriangle, RefreshCw } from 'lucide-react'
+import { CreditCard, ShieldOff, AlertTriangle, RefreshCw, Copy, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { assignNFC, setNFCStatus } from '../../api/students'
 import Spinner from '../../components/Spinner'
 
+function CopyableToken({ value }) {
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error('Could not copy — select and copy manually.')
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <p className="flex-1 text-xs text-gray-500 font-mono break-all bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+        {value}
+      </p>
+      <button type="button" onClick={copy} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-brand-600 shrink-0">
+        {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+      </button>
+    </div>
+  )
+}
+
 export default function NFCAssignForm({ student, onSuccess }) {
   const nfc = student.nfc_card
-  const [uid, setUid] = useState('')
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
+  const [issuedCard, setIssuedCard] = useState(null)
 
-  const doAssign = async (e) => {
-    e.preventDefault()
+  const doAssign = async () => {
     setLoading(true)
     try {
-      await assignNFC(student.id, uid)
-      toast.success('NFC card assigned.')
-      onSuccess()
+      const { data } = await assignNFC(student.id)
+      setIssuedCard(data)
+      toast.success('NFC card issued.')
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to assign NFC.')
+      toast.error(err.response?.data?.detail || 'Failed to issue NFC card.')
     } finally {
       setLoading(false)
     }
@@ -44,17 +68,40 @@ export default function NFCAssignForm({ student, onSuccess }) {
         <p className="text-xs text-gray-400 mt-0.5">{student.registration_number}</p>
       </div>
 
-      {nfc ? (
+      {issuedCard ? (
         <div className="space-y-4">
-          <div className="flex items-start gap-3 p-4 border border-gray-200 rounded-xl">
-            <CreditCard size={20} className="text-brand-500 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-gray-900">Current NFC Card</p>
-              <p className="text-xs text-gray-500 mt-0.5 font-mono">{nfc.uid}</p>
-              <span className={nfc.is_active ? 'badge-green mt-1' : 'badge-red mt-1'}>
-                {nfc.status}
-              </span>
+          <div className="flex items-start gap-3 p-4 border border-green-200 bg-green-50 rounded-xl">
+            <CreditCard size={20} className="text-green-600 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">Card issued</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Write this value onto the physical NFC tag using your external writer tool.
+              </p>
             </div>
+          </div>
+          <CopyableToken value={issuedCard.uid} />
+          <button className="btn-primary w-full justify-center" onClick={onSuccess}>
+            Done
+          </button>
+        </div>
+      ) : nfc ? (
+        <div className="space-y-4">
+          <div className="p-4 border border-gray-200 rounded-xl space-y-3">
+            <div className="flex items-start gap-3">
+              <CreditCard size={20} className="text-brand-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Current NFC Card</p>
+                <span className={nfc.is_active ? 'badge-green mt-1' : 'badge-red mt-1'}>
+                  {nfc.status}
+                </span>
+                {nfc.decrypted_registration_number && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Verified &middot; encodes {nfc.decrypted_registration_number}
+                  </p>
+                )}
+              </div>
+            </div>
+            <CopyableToken value={nfc.uid} />
           </div>
 
           <div>
@@ -79,22 +126,15 @@ export default function NFCAssignForm({ student, onSuccess }) {
           </div>
         </div>
       ) : (
-        <form onSubmit={doAssign} className="space-y-4">
-          <div>
-            <label className="label">NFC Card UID *</label>
-            <input
-              className="input font-mono"
-              value={uid}
-              onChange={(e) => setUid(e.target.value)}
-              placeholder="e.g. A1B2C3D4"
-              required
-            />
-            <p className="text-xs text-gray-400 mt-1">Enter the unique ID from the NFC card.</p>
-          </div>
-          <button type="submit" disabled={loading || !uid} className="btn-primary w-full justify-center">
-            {loading ? <Spinner size={15} /> : <CreditCard size={15} />} {loading ? 'Assigning...' : 'Assign NFC Card'}
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Issuing a card generates an encrypted token from this student's registration number —
+            no manual entry needed.
+          </p>
+          <button onClick={doAssign} disabled={loading} className="btn-primary w-full justify-center">
+            {loading ? <Spinner size={15} /> : <CreditCard size={15} />} {loading ? 'Issuing...' : 'Issue NFC Card'}
           </button>
-        </form>
+        </div>
       )}
     </div>
   )
