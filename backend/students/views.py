@@ -63,7 +63,7 @@ class ProgramViewSet(ModelViewSet):
 class StudentViewSet(ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['is_active', 'college', 'school', 'department', 'program', 'year_of_study']
+    filterset_fields = ['is_active', 'registration_number', 'college', 'school', 'department', 'program', 'year_of_study']
     search_fields = ['full_name', 'registration_number', 'email', 'phone']
     ordering_fields = ['full_name', 'registration_number', 'created_at', 'admission_date']
     ordering = ['-admission_date']
