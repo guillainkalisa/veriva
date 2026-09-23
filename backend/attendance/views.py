@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.utils import timezone
 from accounts.permissions import (
     IsStaff, IsAdminOrLecturer, IsAdminOrSecurity, IsCourseOwnerOrAdmin,
-    IsCourseOwnerOrAdminStrict, IsAdminOrLecturerOrReadOnly, IsCourseManagerOrAdmin,
+    CanManageCourseRoster, IsAdminOrLecturerOrReadOnly, IsCourseManagerOrAdmin,
 )
 
 from .models import Course, AttendanceSession, AttendanceRecord, CampusEntry, CourseEnrollment
@@ -45,11 +45,23 @@ class CourseViewSet(ModelViewSet):
         else:
             serializer.save()
 
-    @action(detail=True, methods=['post'], url_path='enroll', permission_classes=[IsCourseOwnerOrAdmin])
+    def enrollable_students_for(self, course, all_departments=False):
+        """Students who may be enrolled in `course`: its own department's, unless
+        an admin or the HoD overrides for a module shared across departments."""
+        qs = Student.objects.filter(is_active=True)
+        may_override = self.request.user.role in ('admin', 'hod')
+        if course.department_id and not (all_departments and may_override):
+            qs = qs.filter(department_id=course.department_id)
+        return qs
+
+    @action(detail=True, methods=['post'], url_path='enroll', permission_classes=[CanManageCourseRoster])
     def enroll(self, request, pk=None):
         course = self.get_object()
         student_ids = request.data.get('student_ids', [])
-        valid_ids = list(Student.objects.filter(id__in=student_ids).values_list('id', flat=True))
+        valid_ids = list(
+            self.enrollable_students_for(course, all_departments=True)
+            .filter(id__in=student_ids).values_list('id', flat=True)
+        )
         for sid in valid_ids:
             enrollment, created = CourseEnrollment.objects.get_or_create(course=course, student_id=sid)
             if not created and not enrollment.is_active:
@@ -57,7 +69,7 @@ class CourseViewSet(ModelViewSet):
                 enrollment.save(update_fields=['is_active'])
         return Response({'enrolled': len(valid_ids), 'skipped': len(student_ids) - len(valid_ids)})
 
-    @action(detail=True, methods=['post'], url_path='unenroll', permission_classes=[IsCourseOwnerOrAdmin])
+    @action(detail=True, methods=['post'], url_path='unenroll', permission_classes=[CanManageCourseRoster])
     def unenroll(self, request, pk=None):
         course = self.get_object()
         student_ids = request.data.get('student_ids', [])
@@ -66,18 +78,19 @@ class CourseViewSet(ModelViewSet):
         ).update(is_active=False)
         return Response({'unenrolled': updated})
 
-    @action(detail=True, methods=['get'], url_path='enrollable-students', permission_classes=[IsCourseOwnerOrAdminStrict])
+    @action(detail=True, methods=['get'], url_path='enrollable-students', permission_classes=[CanManageCourseRoster])
     def enrollable_students(self, request, pk=None):
         course = self.get_object()
         search = request.query_params.get('q', '').strip()
+        all_departments = request.query_params.get('all_departments') == 'true'
         enrolled_ids = course.enrollments.filter(is_active=True).values_list('student_id', flat=True)
-        qs = Student.objects.filter(is_active=True).exclude(id__in=enrolled_ids)
+        qs = self.enrollable_students_for(course, all_departments).exclude(id__in=enrolled_ids)
         if search:
             qs = qs.filter(Q(full_name__icontains=search) | Q(registration_number__icontains=search))
-        qs = qs.select_related('program')[:20]
+        qs = qs.select_related('program', 'department')[:20]
         return Response(StudentMinimalSerializer(qs, many=True).data)
 
-    @action(detail=True, methods=['get'], url_path='roster', permission_classes=[IsCourseOwnerOrAdminStrict])
+    @action(detail=True, methods=['get'], url_path='roster', permission_classes=[CanManageCourseRoster])
     def roster(self, request, pk=None):
         course = self.get_object()
         from .services import course_eligibility
