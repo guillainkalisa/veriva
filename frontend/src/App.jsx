@@ -11,7 +11,7 @@ import CampusEntries from './pages/campus/CampusEntries'
 import Courses from './pages/courses/Courses'
 import Gates from './pages/gates/Gates'
 import Incidents from './pages/verification/Incidents'
-import VerifyDevice from './pages/verification/VerifyDevice'
+import GateCheck from './pages/verification/GateCheck'
 import NFCStation from './pages/nfc/NFCStation'
 import SessionScan from './pages/attendance/SessionScan'
 import { NAV } from './nav'
@@ -20,7 +20,7 @@ const PAGES = {
   '/': <Dashboard />,
   '/students': <Students />,
   '/devices': <Devices />,
-  '/verify': <VerifyDevice />,
+  '/gate-check': <GateCheck />,
   '/campus': <CampusEntries />,
   '/gates': <Gates />,
   '/attendance': <Attendance />,

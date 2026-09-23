@@ -46,6 +46,7 @@ List endpoints are paginated (`?page=`, 20 per page) and most support `?search=`
 | GET/PATCH/DELETE | `devices/<id>/` | |
 | POST | `devices/<id>/regenerate-qr/` | |
 | POST | `devices/verify/` | body `qr_data` — returns device, owner, active loan |
+| POST | `devices/gate-check/` | body `student` (card tap or reg number) and/or `qr_data`, plus `gate`. Returns `outcome` = owner \| borrower \| mismatch \| student_only \| device_only, and logs a `DeviceCheck`. Security roles only |
 | CRUD | `devices/loans/` | admin only |
 | POST | `devices/loans/<id>/close/` | |
 
