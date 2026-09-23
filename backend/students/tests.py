@@ -71,3 +71,12 @@ class NFCTokenExposureTests(TestCase):
         tap = client.post('/api/v1/attendance/campus-nfc-tap/', {'nfc_uid': token, 'gate': self.gate.id})
         self.assertEqual(tap.status_code, 200)
         self.assertNotIn(token, str(tap.data))
+
+    def test_registration_number_filter_is_exact(self):
+        Student.objects.create(
+            registration_number='2220000011', full_name='Other Student', email='other@ur.ac.rw',
+            college=self.student.college, school=self.student.school,
+            department=self.student.department, program=self.student.program,
+        )
+        response = self.client_for(self.admin).get('/api/v1/students/', {'registration_number': '222000001'})
+        self.assertEqual([s['id'] for s in response.data['results']], [self.student.id])

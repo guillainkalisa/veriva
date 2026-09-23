@@ -7,7 +7,7 @@ import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
 import LoadingState from '../../components/LoadingState'
 import StudentForm from './StudentForm'
-import NFCAssignForm from './NFCAssignForm'
+import NFCCardManager from './NFCCardManager'
 import { getStudents, deleteStudent } from '../../api/students'
 import { useRole } from '../../hooks/useRole'
 
@@ -56,9 +56,14 @@ export default function Students() {
         title="Students"
         subtitle={`${count} registered students`}
         action={canManageStudents && (
-          <button className="btn-primary" onClick={() => { setSelected(null); setShowForm(true) }}>
-            <Plus size={16} /> Add Student
-          </button>
+          <div className="flex gap-2">
+            <button className="btn-secondary" onClick={() => { setSelected(null); setShowNFC(true) }}>
+              <CreditCard size={16} /> Issue NFC Card
+            </button>
+            <button className="btn-primary" onClick={() => { setSelected(null); setShowForm(true) }}>
+              <Plus size={16} /> Add Student
+            </button>
+          </div>
         )}
       />
 
@@ -166,9 +171,9 @@ export default function Students() {
       </Modal>
 
       <Modal open={showNFC} onClose={() => setShowNFC(false)} title="Manage NFC Card">
-        {selected && (
-          <NFCAssignForm
-            student={selected}
+        {showNFC && (
+          <NFCCardManager
+            studentId={selected?.id}
             onSuccess={() => { setShowNFC(false); load() }}
           />
         )}
