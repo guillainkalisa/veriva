@@ -52,6 +52,15 @@ class NFCCardSerializer(serializers.ModelSerializer):
     def get_decrypted_registration_number(self, obj):
         return obj.decrypted_registration_number()
 
+    def to_representation(self, instance):
+        # The uid is the token written to the physical card; anyone holding it
+        # can clone the card, so only admins (who issue cards) ever see it.
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if getattr(getattr(request, 'user', None), 'role', None) != 'admin':
+            data.pop('uid')
+        return data
+
 
 class StudentSerializer(serializers.ModelSerializer):
     nfc_card = NFCCardSerializer(read_only=True)
