@@ -162,7 +162,7 @@ class StudentCreateUpdateSerializer(serializers.ModelSerializer):
 class NFCCardIssueSerializer(serializers.Serializer):
     card_serial = serializers.RegexField(
         r'^[0-9A-Fa-f]+$', max_length=32,
-        error_messages={'invalid': 'Tap the card on the USB reader; the serial is digits only.'},
+        error_messages={'invalid': 'Enter the serial exactly as the USB reader shows it, with no spaces or colons.'},
     )
 
     def validate_card_serial(self, value):

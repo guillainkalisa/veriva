@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { CreditCard, ShieldOff, AlertTriangle, RefreshCw, Copy, Check } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { CreditCard, ShieldOff, AlertTriangle, RefreshCw, Copy, Check, Wifi, Keyboard } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { assignNFC, setNFCStatus } from '../../api/students'
 import Spinner from '../../components/Spinner'
@@ -29,12 +29,27 @@ function CopyableToken({ value }) {
   )
 }
 
-// The USB reader types the chip serial and presses Enter, so tapping the card
-// with this field focused submits the form.
+const SERIAL_MODES = [
+  { key: 'reader', label: 'Tap on reader', icon: Wifi },
+  { key: 'manual', label: 'Type manually', icon: Keyboard },
+]
+
+// The USB reader types the chip serial and presses Enter, so in reader mode a
+// tap with this field focused submits the form.
 function IssueCardForm({ studentId, label, onIssued }) {
+  const [mode, setMode] = useState('reader')
   const [cardSerial, setCardSerial] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [mode])
+
+  const switchMode = (next) => {
+    setMode(next)
+    setCardSerial('')
+    setError('')
+  }
 
   const submit = async (e) => {
     e.preventDefault()
@@ -59,13 +74,34 @@ function IssueCardForm({ studentId, label, onIssued }) {
     <form onSubmit={submit} className="space-y-3">
       <div>
         <label className="label">Card serial</label>
+        <div className="grid grid-cols-2 gap-1 p-1 mb-2 bg-gray-100 rounded-lg">
+          {SERIAL_MODES.map(({ key, label: modeLabel, icon: Icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => switchMode(key)}
+              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                mode === key ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Icon size={13} /> {modeLabel}
+            </button>
+          ))}
+        </div>
         <input
+          ref={inputRef}
           className="input font-mono"
           value={cardSerial}
           onChange={(e) => { setCardSerial(e.target.value); setError('') }}
-          placeholder="Tap the card on the USB reader"
-          autoFocus
+          placeholder={mode === 'reader' ? 'Waiting for card tap...' : 'e.g. 0116658347'}
+          inputMode={mode === 'manual' ? 'numeric' : undefined}
+          autoComplete="off"
         />
+        <p className="text-xs text-gray-400 mt-1">
+          {mode === 'reader'
+            ? 'Tap the card on the USB reader; the card is issued as soon as it is read.'
+            : 'Type the 10-digit number exactly as the USB reader shows it, then press Issue.'}
+        </p>
         {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </div>
       <button type="submit" disabled={loading || !cardSerial.trim()} className="btn-primary w-full justify-center">
