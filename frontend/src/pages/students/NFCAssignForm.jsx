@@ -29,24 +29,57 @@ function CopyableToken({ value }) {
   )
 }
 
+// The USB reader types the chip serial and presses Enter, so tapping the card
+// with this field focused submits the form.
+function IssueCardForm({ studentId, label, onIssued }) {
+  const [cardSerial, setCardSerial] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const serial = cardSerial.trim()
+    if (!serial) return
+    setLoading(true)
+    setError('')
+    try {
+      const { data } = await assignNFC(studentId, serial)
+      toast.success('NFC card issued.')
+      onIssued(data)
+    } catch (err) {
+      const data = err.response?.data
+      setError(data?.card_serial?.[0] || data?.detail || 'Failed to issue NFC card.')
+      setCardSerial('')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <div>
+        <label className="label">Card serial</label>
+        <input
+          className="input font-mono"
+          value={cardSerial}
+          onChange={(e) => { setCardSerial(e.target.value); setError('') }}
+          placeholder="Tap the card on the USB reader"
+          autoFocus
+        />
+        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      </div>
+      <button type="submit" disabled={loading || !cardSerial.trim()} className="btn-primary w-full justify-center">
+        {loading ? <Spinner size={15} /> : <CreditCard size={15} />} {loading ? 'Issuing...' : label}
+      </button>
+    </form>
+  )
+}
+
 export default function NFCAssignForm({ student, onSuccess }) {
   const nfc = student.nfc_card
   const [reason, setReason] = useState('')
   const [loading, setLoading] = useState(false)
   const [issuedCard, setIssuedCard] = useState(null)
-
-  const doAssign = async () => {
-    setLoading(true)
-    try {
-      const { data } = await assignNFC(student.id)
-      setIssuedCard(data)
-      toast.success('NFC card issued.')
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to issue NFC card.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const doStatus = async (action) => {
     setLoading(true)
@@ -73,9 +106,9 @@ export default function NFCAssignForm({ student, onSuccess }) {
           <div className="flex items-start gap-3 p-4 border border-green-200 bg-green-50 rounded-xl">
             <CreditCard size={20} className="text-green-600 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Card issued</p>
+              <p className="text-sm font-medium text-gray-900">Card issued &middot; serial {issuedCard.card_serial}</p>
               <p className="text-xs text-gray-500 mt-1">
-                Write this value onto the physical NFC tag using your external writer tool.
+                Now write this token onto the same card as a Text record using a phone (e.g. NFC Tools).
               </p>
             </div>
           </div>
@@ -99,10 +132,26 @@ export default function NFCAssignForm({ student, onSuccess }) {
                     Verified &middot; encodes {nfc.decrypted_registration_number}
                   </p>
                 )}
+                {nfc.card_serial ? (
+                  <p className="text-xs text-gray-500 mt-1">Card serial <span className="font-mono">{nfc.card_serial}</span></p>
+                ) : (
+                  <p className="text-xs text-amber-600 mt-1">
+                    No card serial recorded, so USB readers won't recognise this card.
+                    Deactivate it and issue a replacement to record one.
+                  </p>
+                )}
               </div>
             </div>
             <CopyableToken value={nfc.uid} />
           </div>
+
+          {!nfc.is_active && (
+            <div className="p-4 border border-gray-200 rounded-xl space-y-2">
+              <p className="text-sm font-medium text-gray-900">Issue replacement card</p>
+              <p className="text-xs text-gray-500">The old card stops working as soon as the new one is issued.</p>
+              <IssueCardForm studentId={student.id} label="Issue Replacement" onIssued={setIssuedCard} />
+            </div>
+          )}
 
           <div>
             <label className="label">Reason (optional)</label>
@@ -128,12 +177,10 @@ export default function NFCAssignForm({ student, onSuccess }) {
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-gray-500">
-            Issuing a card generates an encrypted token from this student's registration number —
-            no manual entry needed.
+            Tap a blank card on the USB reader to record its serial. VERIVA then generates an
+            encrypted token from this student's registration number to write onto the card.
           </p>
-          <button onClick={doAssign} disabled={loading} className="btn-primary w-full justify-center">
-            {loading ? <Spinner size={15} /> : <CreditCard size={15} />} {loading ? 'Issuing...' : 'Issue NFC Card'}
-          </button>
+          <IssueCardForm studentId={student.id} label="Issue NFC Card" onIssued={setIssuedCard} />
         </div>
       )}
     </div>

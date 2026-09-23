@@ -151,7 +151,7 @@ class NFCAttendanceView(APIView):
         session_id = serializer.validated_data['session_id']
 
         try:
-            card = NFCCard.objects.select_related('student').get(uid=uid)
+            card = NFCCard.objects.select_related('student').get(NFCCard.scan_filter(uid))
         except NFCCard.DoesNotExist:
             return Response({'detail': 'NFC card not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -280,7 +280,7 @@ class NFCCampusEntryView(APIView):
             card = NFCCard.objects.select_related(
                 'student', 'student__college', 'student__school',
                 'student__department', 'student__program',
-            ).get(uid=uid)
+            ).get(NFCCard.scan_filter(uid))
         except NFCCard.DoesNotExist:
             return Response({'detail': 'NFC card not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -305,6 +305,7 @@ class NFCCampusEntryView(APIView):
 
         return Response({
             'action': action,
+            'scan_method': card.scan_method(uid),
             'student': StudentSerializer(card.student, context={'request': request}).data,
             'entry': CampusEntrySerializer(entry).data,
         })

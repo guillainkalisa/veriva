@@ -25,7 +25,7 @@ person shows up immediately.
 | Auth | JWT (SimpleJWT), 4 roles: admin, security, lecturer, student |
 | Database | PostgreSQL (SQLite works for local dev) |
 | Frontend | React 18 + Vite, React Router, Tailwind |
-| QR / NFC | `qrcode` for generation; NFC readers act as USB keyboards into the NFC station |
+| QR / NFC | `qrcode` for generation; NFC readers act as USB keyboards into the NFC station (card security: [docs/NFC_SECURITY.md](docs/NFC_SECURITY.md)) |
 
 ## Layout
 
