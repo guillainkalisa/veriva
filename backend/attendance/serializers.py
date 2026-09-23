@@ -19,8 +19,10 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = super().get_fields()
         request = self.context.get('request')
         if request and getattr(request.user, 'role', None) == 'lecturer':
-            fields['department'].read_only = True
-            fields['lecturer'].read_only = True
+            # A lecturer only ever adjusts their own attendance threshold -
+            # identity, assignment and status are admin/HoD/dean decisions.
+            for name in ('name', 'code', 'department', 'lecturer', 'is_active'):
+                fields[name].read_only = True
         return fields
 
 

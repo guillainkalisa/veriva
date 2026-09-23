@@ -12,6 +12,21 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # The old `department` was free text (e.g. "Computer Science and
+        # Information Technology") - can't cast that straight to the new FK's
+        # bigint column. Clear it out first (needs an intermediate nullable
+        # text state, since the original column is NOT NULL), then convert
+        # the now-all-NULL column to the FK. Courses come through with
+        # department=NULL and get re-assigned once via the Courses page.
+        migrations.AlterField(
+            model_name='course',
+            name='department',
+            field=models.CharField(max_length=200, null=True, blank=True),
+        ),
+        migrations.RunSQL(
+            sql="UPDATE attendance_course SET department = NULL;",
+            reverse_sql=migrations.RunSQL.noop,
+        ),
         migrations.AlterField(
             model_name='course',
             name='department',

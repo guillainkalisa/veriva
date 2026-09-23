@@ -24,18 +24,22 @@ from students.serializers import StudentSerializer, StudentMinimalSerializer
 
 
 class CourseViewSet(ModelViewSet):
-    queryset = Course.objects.select_related('lecturer', 'department', 'department__school').all()
     serializer_class = CourseSerializer
     permission_classes = [IsCourseManagerOrAdmin]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['is_active', 'department', 'lecturer']
     search_fields = ['name', 'code', 'department__name']
 
+    def get_queryset(self):
+        qs = Course.objects.select_related('lecturer', 'department', 'department__school')
+        if self.request.user.role == 'lecturer':
+            qs = qs.filter(lecturer=self.request.user)
+        return qs
+
     def perform_create(self, serializer):
-        role = self.request.user.role
-        if role == 'lecturer':
-            serializer.save(lecturer=self.request.user)
-        elif role == 'hod':
+        # Lecturers can't create courses at all (see IsCourseManagerOrAdmin);
+        # a HoD can only ever create within their own department.
+        if self.request.user.role == 'hod':
             serializer.save(department=self.request.user.assigned_department)
         else:
             serializer.save()

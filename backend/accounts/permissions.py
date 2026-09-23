@@ -99,11 +99,20 @@ class IsCourseOwnerOrAdminStrict(RolePermission):
 
 
 class IsCourseManagerOrAdmin(RolePermission):
-    """Who may assign a course's lecturer/department: admin anywhere; a
-    lecturer on their own course; a HoD within their assigned department; a
-    dean within their assigned school. Any staff role may read."""
+    """Courses are created and assigned by admin/HoD/dean, not by lecturers -
+    a lecturer only ever operates on a course already assigned to them
+    (setting their attendance threshold, opening sessions, enrolling
+    students), never creates or deletes one. Any staff role may read.
+    `obj` is a Course."""
     write_roles = {'admin', 'lecturer', 'hod', 'dean'}
     read_roles = STAFF_ROLES
+
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        if role_of(request) == 'lecturer' and view.action in ('create', 'destroy'):
+            return False
+        return True
 
     def has_object_permission(self, request, view, obj):
         role = role_of(request)
