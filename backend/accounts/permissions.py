@@ -83,19 +83,20 @@ class IsCourseOwnerOrAdmin(RolePermission):
         return course.lecturer_id == request.user.id
 
 
-class IsCourseOwnerOrAdminStrict(RolePermission):
-    """Like IsCourseOwnerOrAdmin, but with no 'any staff can read' shortcut -
-    even GET requires exact ownership. For nested per-course student data
-    (roster, enrollable students) where any-lecturer read would leak other
-    lecturers' students."""
-    write_roles = {'admin', 'lecturer'}
+class CanManageCourseRoster(RolePermission):
+    """Reading a course's roster and enrolling students: admin, the course's own
+    lecturer, or the HoD of the course's department. No 'any staff can read'
+    shortcut - even GET is scoped, since rosters are per-course student data.
+    `obj` is a Course."""
+    write_roles = {'admin', 'lecturer', 'hod'}
 
     def has_object_permission(self, request, view, obj):
         role = role_of(request)
         if role == 'admin':
             return True
-        course = obj if hasattr(obj, 'lecturer') else obj.course
-        return course.lecturer_id == request.user.id
+        if role == 'hod':
+            return obj.department_id is not None and obj.department_id == request.user.assigned_department_id
+        return obj.lecturer_id == request.user.id
 
 
 class IsCourseManagerOrAdmin(RolePermission):

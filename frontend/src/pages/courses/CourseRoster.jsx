@@ -4,8 +4,14 @@ import toast from 'react-hot-toast'
 import SearchBar from '../../components/SearchBar'
 import Spinner from '../../components/Spinner'
 import { getCourseRoster, enrollStudents, unenrollStudents, getEnrollableStudents } from '../../api/attendance'
+import { useRole } from '../../hooks/useRole'
 
 export default function CourseRoster({ course }) {
+  const { isAdmin, isHod } = useRole()
+  // A module belongs to one department; admin or the HoD may still enroll
+  // students from other departments into a shared module.
+  const canOverride = (isAdmin || isHod) && Boolean(course.department)
+  const [allDepartments, setAllDepartments] = useState(false)
   const [roster, setRoster] = useState(null)
   const [search, setSearch] = useState('')
   const [candidates, setCandidates] = useState([])
@@ -20,8 +26,8 @@ export default function CourseRoster({ course }) {
 
   useEffect(() => {
     if (!search.trim()) { setCandidates([]); return }
-    getEnrollableStudents(course.id, search).then(({ data }) => setCandidates(data))
-  }, [search, course.id])
+    getEnrollableStudents(course.id, search, allDepartments).then(({ data }) => setCandidates(data))
+  }, [search, course.id, allDepartments])
 
   const toggleSelect = (id) => {
     setSelected((sel) => sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id])
@@ -31,8 +37,9 @@ export default function CourseRoster({ course }) {
     if (!selected.length) return
     setBusy(true)
     try {
-      await enrollStudents(course.id, selected)
-      toast.success(`Enrolled ${selected.length} student(s).`)
+      const { data } = await enrollStudents(course.id, selected)
+      toast.success(`Enrolled ${data.enrolled} student(s).`)
+      if (data.skipped) toast.error(`${data.skipped} student(s) skipped: not in this module's department.`)
       setSelected([])
       setSearch('')
       loadRoster()
@@ -55,6 +62,17 @@ export default function CourseRoster({ course }) {
       <div>
         <label className="label">Enroll students</label>
         <SearchBar value={search} onChange={setSearch} placeholder="Search by name or reg. number..." />
+        {course.department && (
+          <p className="text-xs text-gray-400 mt-1">
+            {allDepartments ? 'Searching all departments.' : `Only students from ${course.department_name ?? "this module's department"}.`}
+          </p>
+        )}
+        {canOverride && (
+          <label className="flex items-center gap-2 mt-2 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={allDepartments} onChange={(e) => { setAllDepartments(e.target.checked); setSelected([]) }} />
+            Include students from other departments (shared module)
+          </label>
+        )}
         {candidates.length > 0 && (
           <div className="mt-2 border border-gray-100 rounded-lg divide-y divide-gray-50 max-h-40 overflow-y-auto">
             {candidates.map((s) => (
@@ -62,6 +80,7 @@ export default function CourseRoster({ course }) {
                 <input type="checkbox" checked={selected.includes(s.id)} onChange={() => toggleSelect(s.id)} />
                 <span className="font-medium text-gray-800">{s.full_name}</span>
                 <span className="font-mono text-xs text-gray-400">{s.registration_number}</span>
+                <span className="ml-auto text-xs text-gray-400">{s.department_name}</span>
               </label>
             ))}
           </div>
