@@ -195,6 +195,13 @@ export default function NFCStation() {
               </div>
             </div>
 
+            {result.scan_method === 'serial' && (
+              <div className="bg-amber-50 px-8 py-3 flex items-center gap-2 text-amber-700 text-sm">
+                <AlertTriangle size={16} className="shrink-0" />
+                Card serial only &mdash; confirm the photo matches the person.
+              </div>
+            )}
+
             <div className="bg-gray-50 px-8 py-3 text-center text-xs text-gray-400">
               Clearing in {AUTO_RESET_MS / 1000} seconds&hellip;
             </div>

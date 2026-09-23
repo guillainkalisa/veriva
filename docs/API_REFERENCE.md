@@ -23,13 +23,13 @@ List endpoints are paginated (`?page=`, 20 per page) and most support `?search=`
 
 | Method | Path | Notes |
 |---|---|---|
-| GET/POST | `students/` | filters: `is_active`, `college`, `school`, `department`, `program`, `year_of_study` |
+| GET/POST | `students/` | filters: `is_active`, `registration_number` (exact), `college`, `school`, `department`, `program`, `year_of_study` |
 | GET/PATCH/DELETE | `students/<id>/` | |
-| POST | `students/<id>/assign-nfc/` | body `uid`; admin only |
+| POST | `students/<id>/assign-nfc/` | body `card_serial` (chip serial from the USB reader); returns the encrypted token to write to the card. Admin only — see [NFC_SECURITY.md](NFC_SECURITY.md) |
 | POST | `students/<id>/nfc-status/` | `action` = deactivate \| report_lost \| reactivate; admin only |
 | GET | `students/by_department/` | `?department_id=&year=` |
 | GET | `students/by_program/` | `?program_id=&year=` |
-| GET | `students/nfc-lookup/` | `?uid=` — student behind a card |
+| GET | `students/nfc-lookup/` | `?uid=` token or card serial; response includes `scan_method` |
 | CRUD | `students/colleges/`, `students/schools/`, `students/departments/`, `students/programs/` | organisation hierarchy (College → School → Department → Programme); write = admin; child lists filter by parent id, e.g. `?college=1` |
 
 ## Campus — `campus/`
@@ -58,9 +58,9 @@ List endpoints are paginated (`?page=`, 20 per page) and most support `?search=`
 | POST | `attendance/sessions/<id>/close/` | |
 | GET | `attendance/sessions/<id>/records/` | |
 | CRUD | `attendance/records/` | |
-| POST | `attendance/nfc-tap/` | `nfc_uid`, `session_id` — record attendance |
+| POST | `attendance/nfc-tap/` | `nfc_uid` (token or card serial), `session_id` — record attendance |
 | CRUD | `attendance/campus-entries/` | admin or security |
-| POST | `attendance/campus-nfc-tap/` | `nfc_uid`, `gate` — toggles entry/exit |
+| POST | `attendance/campus-nfc-tap/` | `nfc_uid` (token or card serial), `gate` — toggles entry/exit; response includes `scan_method` |
 | GET | `attendance/summary/` | today's totals |
 
 ## Verification — `verification/`

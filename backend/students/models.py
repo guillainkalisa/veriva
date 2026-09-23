@@ -152,6 +152,10 @@ class NFCCard(models.Model):
     # Holds the encrypted registration number written to the physical tag
     # (see students/crypto.py). Widened past a raw uid's length for the Fernet token.
     uid = models.CharField(max_length=255, unique=True, db_index=True)
+    # Factory serial of the chip, as typed by a keyboard-wedge USB reader.
+    # Those readers can't see the token in the tag's memory, so gates using
+    # them match on this instead (see docs/NFC_SECURITY.md).
+    card_serial = models.CharField(max_length=32, unique=True, null=True, blank=True)
     issued_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE, db_index=True)
     deactivated_at = models.DateTimeField(null=True, blank=True)
@@ -182,6 +186,15 @@ class NFCCard(models.Model):
     @property
     def is_active(self):
         return self.status == self.STATUS_ACTIVE
+
+    @staticmethod
+    def scan_filter(value):
+        """Match a scan against either the token (phone/NDEF readers) or the
+        chip serial (USB readers). Use with .get(); check scan_method() after."""
+        return models.Q(uid=value) | models.Q(card_serial=value.upper())
+
+    def scan_method(self, value):
+        return 'token' if value == self.uid else 'serial'
 
     def decrypted_registration_number(self):
         """The registration number encoded in this card's token, or None for

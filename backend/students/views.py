@@ -11,7 +11,7 @@ from .models import Student, NFCCard, College, School, Department, Program
 from .crypto import encrypt_registration_number
 from .serializers import (
     StudentSerializer, StudentListSerializer, StudentCreateUpdateSerializer,
-    NFCCardSerializer, NFCCardStatusSerializer,
+    NFCCardSerializer, NFCCardIssueSerializer, NFCCardStatusSerializer,
     CollegeSerializer, SchoolSerializer, DepartmentSerializer, ProgramSerializer
 )
 
@@ -95,16 +95,21 @@ class StudentViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        serializer = NFCCardIssueSerializer(data=request.data, context={'student': student})
+        serializer.is_valid(raise_exception=True)
+        card_serial = serializer.validated_data['card_serial']
+
         token = encrypt_registration_number(student.registration_number)
         if hasattr(student, 'nfc_card'):
             card = student.nfc_card
             card.uid = token
+            card.card_serial = card_serial
             card.status = NFCCard.STATUS_ACTIVE
             card.deactivated_at = None
             card.deactivation_reason = ''
             card.save()
         else:
-            card = NFCCard.objects.create(student=student, uid=token)
+            card = NFCCard.objects.create(student=student, uid=token, card_serial=card_serial)
 
         return Response(
             NFCCardSerializer(card, context={'request': request}).data,
@@ -176,7 +181,7 @@ class NFCLookupView(APIView):
             card = NFCCard.objects.select_related(
                 'student', 'student__college', 'student__school',
                 'student__department', 'student__program',
-            ).get(uid=uid)
+            ).get(NFCCard.scan_filter(uid))
         except NFCCard.DoesNotExist:
             return Response({'detail': 'Card not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -185,5 +190,6 @@ class NFCLookupView(APIView):
 
         return Response({
             'card_status': card.status,
+            'scan_method': card.scan_method(uid),
             'student': StudentSerializer(card.student, context={'request': request}).data,
         })

@@ -44,7 +44,7 @@ class NFCCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = NFCCard
         fields = [
-            'id', 'uid', 'issued_date', 'status', 'deactivated_at',
+            'id', 'uid', 'card_serial', 'issued_date', 'status', 'deactivated_at',
             'deactivation_reason', 'is_active', 'decrypted_registration_number',
         ]
         read_only_fields = ['issued_date', 'deactivated_at', 'is_active']
@@ -53,12 +53,13 @@ class NFCCardSerializer(serializers.ModelSerializer):
         return obj.decrypted_registration_number()
 
     def to_representation(self, instance):
-        # The uid is the token written to the physical card; anyone holding it
-        # can clone the card, so only admins (who issue cards) ever see it.
+        # The token and the chip serial are what a gate accepts, so anyone
+        # holding them can clone the card. Only admins (who issue cards) see them.
         data = super().to_representation(instance)
         request = self.context.get('request')
         if getattr(getattr(request, 'user', None), 'role', None) != 'admin':
             data.pop('uid')
+            data.pop('card_serial')
         return data
 
 
@@ -156,6 +157,19 @@ class StudentCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Programme does not belong to the selected department.')
 
         return data
+
+
+class NFCCardIssueSerializer(serializers.Serializer):
+    card_serial = serializers.RegexField(
+        r'^[0-9A-Fa-f]+$', max_length=32,
+        error_messages={'invalid': 'Tap the card on the USB reader; the serial is digits only.'},
+    )
+
+    def validate_card_serial(self, value):
+        value = value.upper()
+        if NFCCard.objects.filter(card_serial=value).exclude(student=self.context['student']).exists():
+            raise serializers.ValidationError('This physical card is already assigned to another student.')
+        return value
 
 
 class NFCCardStatusSerializer(serializers.Serializer):
