@@ -28,6 +28,9 @@ Only admins can issue cards (`assign-nfc`, `IsAdmin`).
 1. The admin finds the student by registration number (**Students → Issue NFC Card**).
 2. The admin taps a blank card on the USB reader. VERIVA records its chip
    serial in `NFCCard.card_serial`. A serial can belong to only one student.
+   If no reader is at hand, the serial can be typed manually instead, but it
+   must be in the same format the gate reader types (10 decimal digits for our
+   readers), or gates won't match it.
 3. VERIVA encrypts the student's registration number with Fernet
    (AES-128-CBC + HMAC-SHA256, key `NFC_ENCRYPTION_KEY`) and stores the result
    as `NFCCard.uid`.
