@@ -106,7 +106,10 @@ class StudentViewSet(ModelViewSet):
         else:
             card = NFCCard.objects.create(student=student, uid=token)
 
-        return Response(NFCCardSerializer(card).data, status=status.HTTP_201_CREATED)
+        return Response(
+            NFCCardSerializer(card, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=True, methods=['post'], url_path='nfc-status', permission_classes=[IsAdmin])
     def nfc_status(self, request, pk=None):
@@ -131,7 +134,7 @@ class StudentViewSet(ModelViewSet):
             nfc.deactivation_reason = ''
             nfc.save()
 
-        return Response(NFCCardSerializer(nfc).data)
+        return Response(NFCCardSerializer(nfc, context={'request': request}).data)
 
     @action(detail=False, methods=['get'])
     def by_department(self, request):
