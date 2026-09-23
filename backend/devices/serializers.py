@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.utils import timezone
+from campus.models import Gate
 from .models import Device, DeviceLoan
 from students.serializers import StudentListSerializer
 
@@ -28,7 +28,7 @@ class DeviceSerializer(serializers.ModelSerializer):
         return None
 
     def get_active_loan(self, obj):
-        loan = obj.loans.filter(is_active=True, end_date__gte=timezone.now()).first()
+        loan = obj.active_loan()
         if loan:
             return DeviceLoanSerializer(loan).data
         return None
@@ -62,3 +62,15 @@ class DeviceLoanSerializer(serializers.ModelSerializer):
 
 class DeviceVerifySerializer(serializers.Serializer):
     qr_data = serializers.CharField()
+
+
+class GateCheckSerializer(serializers.Serializer):
+    # A card tap (token or chip serial) or a typed registration number.
+    student = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    qr_data = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    gate = serializers.PrimaryKeyRelatedField(queryset=Gate.objects.filter(is_active=True), required=False)
+
+    def validate(self, data):
+        if not data.get('student', '').strip() and not data.get('qr_data', '').strip():
+            raise serializers.ValidationError('Tap a student card or scan a device QR code.')
+        return data

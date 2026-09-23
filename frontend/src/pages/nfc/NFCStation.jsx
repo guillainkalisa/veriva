@@ -1,36 +1,17 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Wifi, CheckCircle, XCircle, AlertTriangle, User, DoorOpen, LogOut as ExitIcon } from 'lucide-react'
 import { nfcCampusTap } from '../../api/attendance'
-import { getGates } from '../../api/campus'
-import { useRole } from '../../hooks/useRole'
+import { useGate } from '../../hooks/useGate'
 
 const AUTO_RESET_MS = 5000
 
 export default function NFCStation() {
-  const { seesAllGates, assignedGates } = useRole()
-
-  const [allGates, setAllGates]   = useState([])
-  const [gateId, setGateId]       = useState(null)
+  const { gateChoices, gateId, setGateId, currentGate, noGate } = useGate()
   const [uid, setUid]             = useState('')
   const [result, setResult]       = useState(null)
   const [scanning, setScanning]   = useState(false)
   const inputRef  = useRef(null)
   const timerRef  = useRef(null)
-
-  // Admin / chief pick from every active gate; a guard is limited to their posts.
-  const gateChoices = useMemo(
-    () => (seesAllGates ? allGates : assignedGates),
-    [seesAllGates, allGates, assignedGates],
-  )
-  const currentGate = gateChoices.find((g) => g.id === gateId)
-
-  useEffect(() => {
-    if (seesAllGates) getGates({ is_active: true }).then(({ data }) => setAllGates(data))
-  }, [seesAllGates])
-
-  useEffect(() => {
-    if (!gateId && gateChoices.length) setGateId(gateChoices[0].id)
-  }, [gateChoices, gateId])
 
   const refocus = useCallback(() => {
     if (inputRef.current) inputRef.current.focus()
@@ -73,7 +54,6 @@ export default function NFCStation() {
   const student = result?.student
   const isEntry = result?.action === 'entry'
   const gateName = currentGate?.name ?? '—'
-  const noGate = gateChoices.length === 0
 
   return (
     <div className="min-h-screen bg-brand-900 flex flex-col select-none">

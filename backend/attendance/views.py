@@ -19,6 +19,7 @@ from .serializers import (
     AttendanceRecordSerializer, NFCAttendanceSerializer,
     CampusEntrySerializer, NFCCampusEntrySerializer, CourseEnrollmentSerializer,
 )
+from campus.gates import resolve_gate
 from students.models import NFCCard, Student
 from students.serializers import StudentSerializer, StudentMinimalSerializer
 
@@ -247,32 +248,12 @@ class NFCCampusEntryView(APIView):
     """Record a campus entry/exit from an NFC tap at a gate."""
     permission_classes = [IsAdminOrSecurity]
 
-    def resolve_gate(self, request, requested_gate):
-        """Which gate this tap counts for. A guard is confined to their assigned
-        gates; admin and the security chief may tap any gate."""
-        user = request.user
-        if user.sees_all_gates:
-            if requested_gate is None:
-                return None, Response({'detail': 'Gate is required.'}, status=status.HTTP_400_BAD_REQUEST)
-            return requested_gate, None
-
-        allowed = user.gate_ids()
-        if not allowed:
-            return None, Response({'detail': 'You are not assigned to any gate.'}, status=status.HTTP_403_FORBIDDEN)
-        if requested_gate is not None:
-            if requested_gate.id not in allowed:
-                return None, Response({'detail': 'You are not assigned to that gate.'}, status=status.HTTP_403_FORBIDDEN)
-            return requested_gate, None
-        if len(allowed) == 1:
-            return user.assigned_gates.first(), None
-        return None, Response({'detail': 'Specify which of your assigned gates.'}, status=status.HTTP_400_BAD_REQUEST)
-
     def post(self, request):
         serializer = NFCCampusEntrySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         uid = serializer.validated_data['nfc_uid']
-        gate, err = self.resolve_gate(request, serializer.validated_data.get('gate'))
+        gate, err = resolve_gate(request.user, serializer.validated_data.get('gate'))
         if err is not None:
             return err
 

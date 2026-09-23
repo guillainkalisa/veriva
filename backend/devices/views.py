@@ -1,18 +1,22 @@
-import json
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.db.models import Q
 from django.utils import timezone
 from accounts.permissions import IsAdmin, IsAdminOrSecurity, IsAdminOrReadOnly
 
-from .models import Device, DeviceLoan
-from .serializers import DeviceSerializer, DeviceLoanSerializer, DeviceVerifySerializer
-from .utils import generate_qr_code
+from campus.gates import resolve_gate
+from students.models import NFCCard, Student
 from students.serializers import StudentSerializer
+
+from .models import Device, DeviceCheck, DeviceLoan
+from .serializers import DeviceSerializer, DeviceLoanSerializer, DeviceVerifySerializer, GateCheckSerializer
+from .utils import find_device_by_qr, generate_qr_code
 
 
 class DeviceViewSet(ModelViewSet):
@@ -61,25 +65,8 @@ class DeviceVerifyView(APIView):
         serializer = DeviceVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        qr_data = serializer.validated_data['qr_data']
-
-        try:
-            payload = json.loads(qr_data)
-        except (json.JSONDecodeError, ValueError):
-            return Response({'detail': 'Invalid QR code format.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not payload.get('veriva_device'):
-            return Response({'detail': 'Not a VERIVA device QR code.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            device = Device.objects.select_related('owner').get(
-                serial_number=payload.get('serial'),
-                qr_data=qr_data
-            )
-        except Device.DoesNotExist:
-            return Response({'detail': 'Device not found or QR code mismatch.'}, status=status.HTTP_404_NOT_FOUND)
-
-        active_loan = device.loans.filter(is_active=True, end_date__gte=timezone.now()).first()
+        device = find_device_by_qr(serializer.validated_data['qr_data'])
+        active_loan = device.active_loan()
 
         return Response({
             'device': DeviceSerializer(device, context={'request': request}).data,
@@ -87,3 +74,80 @@ class DeviceVerifyView(APIView):
             'active_loan': DeviceLoanSerializer(active_loan).data if active_loan else None,
             'verified': True,
         })
+
+
+def identify_student(value):
+    """The student behind a card tap (token or chip serial) or a typed
+    registration number, as (student, identified_by)."""
+    card = NFCCard.objects.select_related('student').filter(NFCCard.scan_filter(value)).first()
+    if card:
+        if not card.is_active:
+            raise PermissionDenied(f'This NFC card is {card.get_status_display().lower()}.')
+        return card.student, card.scan_method(value)
+
+    student = Student.objects.filter(registration_number=value.upper()).first()
+    if student:
+        return student, 'registration_number'
+    raise NotFound('No student card or registration number matches.')
+
+
+class GateCheckView(APIView):
+    """Check a person and/or a device at a gate. With both, decides whether the
+    person may take the device: its owner, or the borrower on an active loan."""
+    permission_classes = [IsAdminOrSecurity]
+
+    def post(self, request):
+        serializer = GateCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        gate, err = resolve_gate(request.user, data.get('gate'))
+        if err is not None:
+            return err
+
+        student = identified_by = device = active_loan = None
+        if data.get('student', '').strip():
+            student, identified_by = identify_student(data['student'].strip())
+        if data.get('qr_data', '').strip():
+            device = find_device_by_qr(data['qr_data'].strip())
+            active_loan = device.active_loan()
+
+        if student and device:
+            if device.owner_id == student.id:
+                outcome = DeviceCheck.OUTCOME_OWNER
+            elif active_loan and active_loan.borrower_id == student.id:
+                outcome = DeviceCheck.OUTCOME_BORROWER
+            else:
+                outcome = DeviceCheck.OUTCOME_MISMATCH
+        elif student:
+            outcome = DeviceCheck.OUTCOME_STUDENT_ONLY
+        else:
+            outcome = DeviceCheck.OUTCOME_DEVICE_ONLY
+
+        check = DeviceCheck.objects.create(
+            student=student, device=device, outcome=outcome, identified_by=identified_by or '',
+            gate=gate, checked_by=request.user,
+        )
+
+        context = {'request': request}
+        response = {
+            'check_id': check.id,
+            'outcome': outcome,
+            'identified_by': identified_by,
+            'gate': {'id': gate.id, 'name': gate.name},
+            'student': StudentSerializer(student, context=context).data if student else None,
+            'device': DeviceSerializer(device, context=context).data if device else None,
+            'owner': StudentSerializer(device.owner, context=context).data if device else None,
+            'active_loan': DeviceLoanSerializer(active_loan).data if active_loan else None,
+        }
+        if outcome == DeviceCheck.OUTCOME_STUDENT_ONLY:
+            now = timezone.now()
+            devices = Device.objects.filter(
+                Q(owner=student) | Q(
+                    loans__borrower=student, loans__is_active=True,
+                    loans__start_date__lte=now, loans__end_date__gte=now,
+                ),
+                is_active=True,
+            ).distinct()
+            response['devices'] = DeviceSerializer(devices, many=True, context=context).data
+        return Response(response)

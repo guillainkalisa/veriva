@@ -3,6 +3,7 @@ import uuid
 import json
 from io import BytesIO
 from django.core.files import File
+from rest_framework.exceptions import NotFound, ValidationError
 
 
 def generate_qr_code(device):
@@ -36,3 +37,22 @@ def generate_qr_code(device):
     device.qr_data = qr_data
     device.qr_code.save(filename, File(buffer), save=False)
     return device
+
+
+def find_device_by_qr(qr_data):
+    """The device a scanned QR belongs to. The random token in the payload
+    means a QR can't be forged from a device's public details alone."""
+    from .models import Device
+
+    try:
+        payload = json.loads(qr_data)
+    except (json.JSONDecodeError, ValueError):
+        raise ValidationError({'detail': 'Invalid QR code format.'})
+
+    if not isinstance(payload, dict) or not payload.get('veriva_device'):
+        raise ValidationError({'detail': 'Not a VERIVA device QR code.'})
+
+    try:
+        return Device.objects.select_related('owner').get(serial_number=payload.get('serial'), qr_data=qr_data)
+    except Device.DoesNotExist:
+        raise NotFound('Device not found or QR code mismatch.')

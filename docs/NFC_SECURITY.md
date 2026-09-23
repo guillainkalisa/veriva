@@ -85,6 +85,22 @@ serial included, can be cloned onto a magic card. Only cards with modern
 cryptography (MIFARE DESFire EV2/EV3) remove that risk; they are the
 recommendation for a university-wide rollout.
 
+## Device gate checks
+
+**Gate Check** (`devices/gate-check/`) combines the card with the device's QR
+code: the guard taps the student's card and scans the QR with a phone or laptop
+camera. The result is *owner*, *borrower* (active loan to this student) or
+*mismatch*; every check is logged as a `DeviceCheck` with the gate and guard.
+
+| Attack | What stops it |
+|---|---|
+| Forging a QR from a device's public details | The QR carries a random token that must match the stored `qr_data` exactly |
+| Copying a real QR sticker onto a stolen laptop | The screen shows the registered serial number; the guard compares it with the label on the device |
+| Walking out with someone else's laptop | Card ≠ owner and no active loan → *mismatch*, one click to report an incident |
+| Using someone else's card | The photo check, as at the gate |
+
+A loan only authorises the borrower between its start and end dates.
+
 ## Operating rules
 
 - **Never change `NFC_ENCRYPTION_KEY`** once cards are issued: every token
