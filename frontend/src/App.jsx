@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import Layout from './components/Layout'
 import AccessDenied from './components/AccessDenied'
+import LogoLoader from './components/LogoLoader'
 import Login from './pages/auth/Login'
 import Dashboard from './pages/dashboard/Dashboard'
 import Students from './pages/students/Students'
@@ -31,10 +32,7 @@ const PAGES = {
 function Loader() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-gray-400 text-sm">Loading VERIVA...</p>
-      </div>
+      <LogoLoader className="w-28 sm:w-36 lg:w-40" />
     </div>
   )
 }

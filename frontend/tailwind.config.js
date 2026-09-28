@@ -22,9 +22,19 @@ export default {
           from: { opacity: 0, transform: 'translateY(2px)' },
           to: { opacity: 1, transform: 'translateY(0)' },
         },
+        riseIn: {
+          from: { opacity: 0, transform: 'translateY(6px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        shimmer: {
+          from: { backgroundPosition: '200% 0' },
+          to: { backgroundPosition: '-200% 0' },
+        },
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
+        'rise-in': 'riseIn 0.6s ease-out both',
+        shimmer: 'shimmer 2.4s linear infinite',
       },
     },
   },

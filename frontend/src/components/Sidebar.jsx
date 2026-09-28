@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { ShieldAlert, LogOut, ChevronRight } from 'lucide-react'
+import { LogOut, ChevronRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import Slogan from './Slogan'
 import { NAV, ROLE_LABEL, ROLE_BADGE } from '../nav'
 
 export default function Sidebar() {
@@ -11,14 +12,9 @@ export default function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-brand-900 flex flex-col z-20">
       <div className="p-6 border-b border-brand-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-brand-500 rounded-lg flex items-center justify-center">
-            <ShieldAlert size={18} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-white font-bold text-lg leading-none">VERIVA</h1>
-            <p className="text-brand-300 text-xs mt-0.5">Campus Verification</p>
-          </div>
+        <div className="flex flex-col items-center gap-3">
+          <img src="/veriva-logo-white.svg" alt="VERIVA" className="w-14 h-14" />
+          <Slogan className="text-white" />
         </div>
       </div>
 

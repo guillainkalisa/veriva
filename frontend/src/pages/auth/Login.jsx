@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ShieldAlert, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../hooks/useAuth'
 import Spinner from '../../components/Spinner'
@@ -30,9 +30,7 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4">
-            <ShieldAlert size={32} className="text-white" />
-          </div>
+          <img src="/veriva-logo-white.svg" alt="VERIVA" className="inline-block w-16 h-16 mb-4" />
           <h1 className="text-3xl font-bold text-white">VERIVA</h1>
           <p className="text-brand-200 text-sm mt-1">Smart Campus Verification System</p>
           <p className="text-brand-300 text-xs mt-1">University of Rwanda</p>

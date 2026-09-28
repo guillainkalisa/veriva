@@ -17,8 +17,9 @@ const emptyForm = { name: '', code: '', lecturer: '', department: '', min_attend
 export default function Courses() {
   const {
     canManageCourses, isAdmin, isHod, isDean, isLecturer,
-    assignedDepartment, assignedDepartmentName, assignedSchool,
+    assignedDepartmentName, assignedSchool,
   } = useRole()
+  const canCreateCourses = isAdmin || isHod || isDean
   const [courses, setCourses] = useState([])
   const [lecturers, setLecturers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -91,16 +92,16 @@ export default function Courses() {
 
   return (
     <div>
-      <PageHeader title="Courses" subtitle="Manage academic courses for attendance tracking"
-        action={canManageCourses && <button className="btn-primary" onClick={() => openForm()}><Plus size={16} /> Add Course</button>}
+      <PageHeader title="Courses" subtitle={isLecturer ? 'Courses assigned to you' : 'Manage academic courses for attendance tracking'}
+        action={canCreateCourses && <button className="btn-primary" onClick={() => openForm()}><Plus size={16} /> Add Course</button>}
       />
 
       <div className="card">
         {loading ? (
           <LoadingState />
         ) : courses.length === 0 ? (
-          <EmptyState icon={BookOpen} message="No courses yet." action={
-            <button className="btn-primary" onClick={() => openForm()}><Plus size={16} /> Add Course</button>
+          <EmptyState icon={BookOpen} message={isLecturer ? 'No courses assigned to you yet.' : 'No courses yet.'} action={
+            canCreateCourses && <button className="btn-primary" onClick={() => openForm()}><Plus size={16} /> Add Course</button>
           } />
         ) : (
           <div className="overflow-x-auto animate-fade-in">
@@ -149,11 +150,13 @@ export default function Courses() {
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="label">Course Code *</label>
-            <input className="input font-mono" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} required placeholder="e.g. CST101" />
+            <input className="input font-mono" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })}
+              required placeholder="e.g. CST101" disabled={isLecturer} />
           </div>
           <div>
             <label className="label">Course Name *</label>
-            <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required disabled={isLecturer} />
           </div>
 
           {(isAdmin || isDean) && (

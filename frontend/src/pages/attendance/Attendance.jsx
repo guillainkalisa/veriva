@@ -81,7 +81,7 @@ export default function Attendance() {
       />
 
       {loading ? (
-        <div className="card"><LoadingState /></div>
+        <LoadingState />
       ) : sessions.length === 0 ? (
         <EmptyState icon={CalendarCheck} message="No attendance sessions yet." action={
           canManageAttendance && <button className="btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create Session</button>

@@ -44,7 +44,7 @@ export default function NFCCardManager({ studentId, onSuccess }) {
   }
 
   if (studentId) {
-    return loading || !student ? <LoadingState /> : <NFCAssignForm student={student} onSuccess={onSuccess} />
+    return loading || !student ? <LoadingState inline /> : <NFCAssignForm student={student} onSuccess={onSuccess} />
   }
 
   if (student) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Users, Laptop, CalendarCheck, ShieldAlert, DoorOpen, BookOpen, GraduationCap } from 'lucide-react'
 import StatCard from '../../components/StatCard'
 import PageHeader from '../../components/PageHeader'
+import LoadingState from '../../components/LoadingState'
 import { getDashboardStats, getIncidents } from '../../api/verification'
 import { useRole } from '../../hooks/useRole'
 
@@ -32,11 +33,7 @@ export default function Dashboard() {
       <PageHeader title="Dashboard" subtitle={`Signed in as ${roleLabel}`} />
 
       {loading ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array(4).fill(0).map((_, i) => (
-            <div key={i} className="card p-5 animate-pulse h-28 bg-gray-100" />
-          ))}
-        </div>
+        <LoadingState />
       ) : (
         <div className="animate-fade-in">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

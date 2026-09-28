@@ -1,10 +1,26 @@
-import Spinner from './Spinner'
+import { createPortal } from 'react-dom'
+import LogoLoader from './LogoLoader'
 
-export default function LoadingState({ label = 'Loading...' }) {
+// Page loaders float in the middle of the content area (right of the fixed
+// sidebar); `inline` keeps the loader in place, e.g. inside a modal.
+export default function LoadingState({ inline = false }) {
+  if (inline) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <LogoLoader className="w-20 sm:w-24" />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-400 text-sm animate-fade-in">
-      <Spinner size={24} className="text-brand-500" />
-      {label}
-    </div>
+    <>
+      <div className="min-h-[50vh]" />
+      {createPortal(
+        <div className="fixed inset-y-0 right-0 left-64 z-10 flex items-center justify-center pointer-events-none animate-fade-in">
+          <LogoLoader />
+        </div>,
+        document.body,
+      )}
+    </>
   )
 }
