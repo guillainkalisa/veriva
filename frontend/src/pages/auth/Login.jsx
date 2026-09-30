@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../../hooks/useAuth'
+import Slogan from '../../components/Slogan'
 import Spinner from '../../components/Spinner'
 
 export default function Login() {
@@ -27,16 +28,16 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <img src="/veriva-logo-white.svg" alt="VERIVA" className="inline-block w-16 h-16 mb-4" />
           <h1 className="text-3xl font-bold text-white">VERIVA</h1>
-          <p className="text-brand-200 text-sm mt-1">Smart Campus Verification System</p>
-          <p className="text-brand-300 text-xs mt-1">University of Rwanda</p>
+          <Slogan className="text-white mt-3" />
+          <p className="text-brand-300 text-xs mt-3">University of Rwanda</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
           <form onSubmit={submit} className="space-y-4">
             <div>

@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import EmptyState from '../../components/EmptyState'
 import LoadingState from '../../components/LoadingState'
+import SegmentedControl from '../../components/SegmentedControl'
 import Spinner from '../../components/Spinner'
 import { getIncidents, createIncident, resolveIncident } from '../../api/verification'
 import { getStudents } from '../../api/students'
@@ -13,11 +14,17 @@ import { useRole } from '../../hooks/useRole'
 
 const TYPES = [
   { value: 'device_mismatch', label: 'Device Ownership Mismatch' },
-  { value: 'card_sharing', label: 'NFC Card Sharing Attempt' },
+  { value: 'card_sharing', label: 'Card Sharing Attempt' },
   { value: 'unauthorized_entry', label: 'Unauthorized Campus Entry' },
   { value: 'stolen_device', label: 'Stolen Device Report' },
   { value: 'stranger', label: 'Unregistered Person on Campus' },
   { value: 'other', label: 'Other' },
+]
+
+const FILTERS = [
+  { value: '', label: 'All' },
+  { value: 'unresolved', label: 'Unresolved' },
+  { value: 'resolved', label: 'Resolved' },
 ]
 
 export default function Incidents() {
@@ -90,16 +97,8 @@ export default function Incidents() {
       />
 
       <div className="card">
-        <div className="p-4 border-b border-gray-100 flex gap-2">
-          {[['', 'All'], ['unresolved', 'Unresolved'], ['resolved', 'Resolved']].map(([val, label]) => (
-            <button
-              key={val}
-              onClick={() => setFilter(val)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === val ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="p-4 border-b border-gray-100 flex">
+          <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} className="w-full sm:w-auto" />
         </div>
 
         {loading ? (
@@ -110,9 +109,9 @@ export default function Incidents() {
           <div className="divide-y divide-gray-50 animate-fade-in">
             {incidents.map((inc) => (
               <div key={inc.id} className="p-4 hover:bg-gray-50/50">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="font-semibold text-gray-900 text-sm">{inc.type_display}</span>
                       <span className={severityClass[inc.severity] || 'badge-gray'}>{inc.severity_display}</span>
                       <span className={inc.is_resolved ? 'badge-green' : 'badge-red'}>
@@ -129,7 +128,7 @@ export default function Incidents() {
                   </div>
                   {!inc.is_resolved && canResolveIncidents && (
                     <button
-                      className="btn-success text-xs py-1"
+                      className="btn-success text-xs py-1 self-start"
                       onClick={() => { setSelected(inc); setResolveNotes(''); setShowResolve(true) }}
                     >
                       <CheckCircle size={13} /> Resolve
@@ -144,7 +143,7 @@ export default function Incidents() {
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Report Incident" size="lg">
         <form onSubmit={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Type *</label>
               <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} required>
@@ -165,7 +164,7 @@ export default function Incidents() {
             <label className="label">Description *</label>
             <textarea className="input resize-none" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Involved Student</label>
               <select className="input" value={form.involved_student} onChange={(e) => setForm({ ...form, involved_student: e.target.value })}>

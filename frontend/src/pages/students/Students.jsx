@@ -46,8 +46,8 @@ export default function Students() {
   }
 
   const nfcBadge = (s) => {
-    if (s.has_nfc) return <span className="badge-green">NFC Active</span>
-    return <span className="badge-gray">No NFC</span>
+    if (s.has_nfc) return <span className="badge-green">Card Active</span>
+    return <span className="badge-gray">No Card</span>
   }
 
   return (
@@ -56,14 +56,14 @@ export default function Students() {
         title="Students"
         subtitle={`${count} registered students`}
         action={canManageStudents && (
-          <div className="flex gap-2">
+          <>
             <button className="btn-secondary" onClick={() => { setSelected(null); setShowNFC(true) }}>
-              <CreditCard size={16} /> Issue NFC Card
+              <CreditCard size={16} /> Issue Card
             </button>
             <button className="btn-primary" onClick={() => { setSelected(null); setShowForm(true) }}>
               <Plus size={16} /> Add Student
             </button>
-          </div>
+          </>
         )}
       />
 
@@ -89,7 +89,7 @@ export default function Students() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Student', 'Reg. Number', 'College / Dept.', 'Year', 'NFC', 'Actions'].map((h) => (
+                  {['Student', 'Reg. Number', 'College / Dept.', 'Year', 'Card', 'Actions'].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -129,7 +129,7 @@ export default function Students() {
                           <button
                             onClick={() => { setSelected(s); setShowNFC(true) }}
                             className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-green-600 transition-colors"
-                            title="Manage NFC Card"
+                            title="Manage Card"
                           >
                             <CreditCard size={14} />
                           </button>
@@ -170,7 +170,7 @@ export default function Students() {
         />
       </Modal>
 
-      <Modal open={showNFC} onClose={() => setShowNFC(false)} title="Manage NFC Card">
+      <Modal open={showNFC} onClose={() => setShowNFC(false)} title="Manage Card">
         {showNFC && (
           <NFCCardManager
             studentId={selected?.id}

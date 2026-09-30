@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { CreditCard, ShieldOff, AlertTriangle, RefreshCw, Copy, Check, Wifi, Keyboard } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { assignNFC, setNFCStatus } from '../../api/students'
+import SegmentedControl from '../../components/SegmentedControl'
 import Spinner from '../../components/Spinner'
 
 function CopyableToken({ value }) {
@@ -30,8 +31,8 @@ function CopyableToken({ value }) {
 }
 
 const SERIAL_MODES = [
-  { key: 'reader', label: 'Tap on reader', icon: Wifi },
-  { key: 'manual', label: 'Type manually', icon: Keyboard },
+  { value: 'reader', label: 'Tap on reader', icon: Wifi },
+  { value: 'manual', label: 'Type manually', icon: Keyboard },
 ]
 
 // The USB reader types the chip serial and presses Enter, so in reader mode a
@@ -59,11 +60,11 @@ function IssueCardForm({ studentId, label, onIssued }) {
     setError('')
     try {
       const { data } = await assignNFC(studentId, serial)
-      toast.success('NFC card issued.')
+      toast.success('Card issued.')
       onIssued(data)
     } catch (err) {
       const data = err.response?.data
-      setError(data?.card_serial?.[0] || data?.detail || 'Failed to issue NFC card.')
+      setError(data?.card_serial?.[0] || data?.detail || 'Failed to issue card.')
       setCardSerial('')
     } finally {
       setLoading(false)
@@ -74,20 +75,7 @@ function IssueCardForm({ studentId, label, onIssued }) {
     <form onSubmit={submit} className="space-y-3">
       <div>
         <label className="label">Card serial</label>
-        <div className="grid grid-cols-2 gap-1 p-1 mb-2 bg-gray-100 rounded-lg">
-          {SERIAL_MODES.map(({ key, label: modeLabel, icon: Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => switchMode(key)}
-              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                mode === key ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Icon size={13} /> {modeLabel}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl options={SERIAL_MODES} value={mode} onChange={switchMode} className="mb-2" />
         <input
           ref={inputRef}
           className="input font-mono"
@@ -159,7 +147,7 @@ export default function NFCAssignForm({ student, onSuccess }) {
             <div className="flex items-start gap-3">
               <CreditCard size={20} className="text-brand-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Current NFC Card</p>
+                <p className="text-sm font-medium text-gray-900">Current Card</p>
                 <span className={nfc.is_active ? 'badge-green mt-1' : 'badge-red mt-1'}>
                   {nfc.status}
                 </span>
@@ -194,7 +182,7 @@ export default function NFCAssignForm({ student, onSuccess }) {
             <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Card lost, replacing..." />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {!nfc.is_active && (
               <button className="btn-success" onClick={() => doStatus('reactivate')} disabled={loading}>
                 <RefreshCw size={14} /> Reactivate
@@ -216,7 +204,7 @@ export default function NFCAssignForm({ student, onSuccess }) {
             Tap a blank card on the USB reader to record its serial. VERIVA then generates an
             encrypted token from this student's registration number to write onto the card.
           </p>
-          <IssueCardForm studentId={student.id} label="Issue NFC Card" onIssued={setIssuedCard} />
+          <IssueCardForm studentId={student.id} label="Issue Card" onIssued={setIssuedCard} />
         </div>
       )}
     </div>

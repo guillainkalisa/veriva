@@ -167,10 +167,10 @@ class NFCAttendanceView(APIView):
         try:
             card = NFCCard.objects.select_related('student').get(NFCCard.scan_filter(uid))
         except NFCCard.DoesNotExist:
-            return Response({'detail': 'NFC card not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Card not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if not card.is_active:
-            return Response({'detail': 'NFC card is not active.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Card is not active.'}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             session = AttendanceSession.objects.get(pk=session_id)
@@ -276,10 +276,10 @@ class NFCCampusEntryView(APIView):
                 'student__department', 'student__program',
             ).get(NFCCard.scan_filter(uid))
         except NFCCard.DoesNotExist:
-            return Response({'detail': 'NFC card not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'Card not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         if not card.is_active:
-            return Response({'detail': 'NFC card is not active.', 'status': card.status}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Card is not active.', 'status': card.status}, status=status.HTTP_403_FORBIDDEN)
 
         open_entry = CampusEntry.objects.filter(
             student=card.student, status=CampusEntry.STATUS_ENTERED

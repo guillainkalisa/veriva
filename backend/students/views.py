@@ -91,7 +91,7 @@ class StudentViewSet(ModelViewSet):
         student = self.get_object()
         if hasattr(student, 'nfc_card') and student.nfc_card.is_active:
             return Response(
-                {'detail': 'Student already has an active NFC card.'},
+                {'detail': 'Student already has an active card.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -120,7 +120,7 @@ class StudentViewSet(ModelViewSet):
     def nfc_status(self, request, pk=None):
         student = self.get_object()
         if not hasattr(student, 'nfc_card'):
-            return Response({'detail': 'No NFC card found for this student.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'No card found for this student.'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = NFCCardStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

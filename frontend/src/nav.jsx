@@ -12,7 +12,7 @@ export const NAV = [
   { path: '/students',    label: 'Students',       icon: Users,           roles: ['admin', 'security_chief', 'security', 'lecturer'] },
   { path: '/devices',     label: 'Devices',        icon: Laptop,          roles: ['admin'] },
   { path: '/gate-check',  label: 'Gate Check',     icon: ScanLine,        roles: ['admin', 'security_chief', 'security'] },
-  { path: '/nfc-station', label: 'NFC Station',    icon: Wifi,            roles: SECURITY, fullscreen: true },
+  { path: '/card-station', label: 'Card Station',   icon: Wifi,            roles: SECURITY, fullscreen: true },
   { path: '/campus',      label: 'Campus Entries', icon: DoorOpen,        roles: SECURITY },
   { path: '/gates',       label: 'Gates',          icon: Fingerprint,     roles: ['admin'] },
   { path: '/attendance',  label: 'Attendance',     icon: CalendarCheck,   roles: ['admin', 'lecturer'] },

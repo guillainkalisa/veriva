@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  CreditCard, Laptop, ScanLine, CheckCircle, XCircle, AlertTriangle, User,
+  CreditCard, Laptop, ScanLine, XCircle, AlertTriangle, User,
   RotateCcw, ShieldAlert, X, Camera, ArrowRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -9,11 +9,12 @@ import { createIncident } from '../../api/verification'
 import { useGate } from '../../hooks/useGate'
 import PageHeader from '../../components/PageHeader'
 import Spinner from '../../components/Spinner'
+import SuccessTick from '../../components/SuccessTick'
 import QrCameraScanner from '../../components/QrCameraScanner'
 
 const OUTCOMES = {
-  owner:        { tone: 'green', icon: CheckCircle,   title: 'Owner verified' },
-  borrower:     { tone: 'blue',  icon: CheckCircle,   title: 'Authorised borrower' },
+  owner:        { tone: 'green', tick: 'success',   title: 'Owner verified' },
+  borrower:     { tone: 'blue',  tick: 'brand',     title: 'Authorised borrower' },
   mismatch:     { tone: 'red',   icon: XCircle,       title: 'Mismatch — do not let the device leave' },
   student_only: { tone: 'gray',  icon: CreditCard,    title: 'Devices registered to this student' },
   device_only:  { tone: 'gray',  icon: Laptop,        title: 'Registered owner of this device' },
@@ -41,7 +42,7 @@ function StepCard({ number, icon: Icon, title, children }) {
 function Captured({ label, onClear }) {
   return (
     <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-lg">
-      <CheckCircle size={16} className="text-green-600 shrink-0" />
+      <SuccessTick tone="success" size={22} />
       <p className="flex-1 text-sm text-green-800">{label}</p>
       <button type="button" onClick={onClear} className="p-1 rounded text-green-700 hover:bg-green-100" title="Clear">
         <X size={14} />
@@ -52,13 +53,13 @@ function Captured({ label, onClear }) {
 
 function PersonCard({ title, student }) {
   return (
-    <div className="card p-5">
+    <div className="card p-4 sm:p-5">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{title}</p>
       <div className="flex items-start gap-4">
         {student.photo_url ? (
-          <img src={student.photo_url} alt={student.full_name} className="w-24 h-24 rounded-2xl object-cover border-2 border-gray-100 shrink-0" />
+          <img src={student.photo_url} alt={student.full_name} className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-gray-100 shrink-0" />
         ) : (
-          <div className="w-24 h-24 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0">
             <User size={36} className="text-brand-400" />
           </div>
         )}
@@ -79,7 +80,7 @@ function PersonCard({ title, student }) {
 
 function DeviceCard({ device }) {
   return (
-    <div className="card p-5">
+    <div className="card p-4 sm:p-5">
       <div className="flex items-start gap-4">
         <div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
           <Laptop size={20} className="text-purple-600" />
@@ -190,7 +191,7 @@ export default function GateCheck() {
       />
 
       {noGate ? (
-        <div className="card p-8 text-center">
+        <div className="card p-6 sm:p-8 text-center">
           <AlertTriangle size={40} className="text-amber-400 mx-auto mb-3" />
           <p className="font-semibold text-gray-900">No gate assigned</p>
           <p className="text-sm text-gray-500 mt-1">Ask an administrator to assign you to a gate.</p>
@@ -271,7 +272,9 @@ export default function GateCheck() {
           {result && outcome && (
             <div className="space-y-4 animate-fade-in">
               <div className={`flex items-start gap-3 p-4 rounded-xl border ${TONES[outcome.tone]}`}>
-                <outcome.icon size={22} className="shrink-0 mt-0.5" />
+                {outcome.tick
+                  ? <SuccessTick tone={outcome.tick} size={28} className="-m-0.5" />
+                  : <outcome.icon size={22} className="shrink-0 mt-0.5" />}
                 <div className="flex-1">
                   <p className="font-semibold">{outcome.title}</p>
                   {result.outcome === 'owner' && (

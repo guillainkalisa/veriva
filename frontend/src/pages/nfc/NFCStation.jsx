@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Wifi, CheckCircle, XCircle, AlertTriangle, User, DoorOpen, LogOut as ExitIcon } from 'lucide-react'
+import { XCircle, AlertTriangle, User, DoorOpen, LogOut as ExitIcon } from 'lucide-react'
+import LogoLoader from '../../components/LogoLoader'
+import SuccessTick from '../../components/SuccessTick'
+import StationHeader from '../../components/StationHeader'
 import { nfcCampusTap } from '../../api/attendance'
 import { useGate } from '../../hooks/useGate'
 
@@ -56,44 +59,32 @@ export default function NFCStation() {
   const gateName = currentGate?.name ?? '—'
 
   return (
-    <div className="min-h-screen bg-brand-900 flex flex-col select-none">
-      <header className="flex items-center justify-between px-8 py-4 border-b border-brand-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-brand-500 rounded-lg flex items-center justify-center">
-            <Wifi size={18} className="text-white" />
-          </div>
-          <div>
-            <p className="text-white font-bold text-lg leading-none">VERIVA</p>
-            <p className="text-brand-300 text-xs">NFC Scanning Station</p>
-          </div>
-        </div>
+    <div className="min-h-dvh bg-brand-900 flex flex-col select-none">
+      <StationHeader title="Card Scanning Station" exitTo="/gate-check">
+        <label className="text-brand-300 text-sm">Gate:</label>
+        {gateChoices.length > 1 ? (
+          <select
+            value={gateId ?? ''}
+            onChange={(e) => setGateId(Number(e.target.value))}
+            onFocus={() => clearTimeout(timerRef.current)}
+            onBlur={refocus}
+            className="bg-brand-800 text-white text-sm rounded-lg px-3 py-1.5 border border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
+          >
+            {gateChoices.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        ) : (
+          <span className="bg-brand-800 text-white text-sm rounded-lg px-3 py-1.5 border border-brand-700">
+            {gateName}
+          </span>
+        )}
 
-        <div className="flex items-center gap-3">
-          <label className="text-brand-300 text-sm">Gate:</label>
-          {gateChoices.length > 1 ? (
-            <select
-              value={gateId ?? ''}
-              onChange={(e) => setGateId(Number(e.target.value))}
-              onFocus={() => clearTimeout(timerRef.current)}
-              onBlur={refocus}
-              className="bg-brand-800 text-white text-sm rounded-lg px-3 py-1.5 border border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-400"
-            >
-              {gateChoices.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-            </select>
-          ) : (
-            <span className="bg-brand-800 text-white text-sm rounded-lg px-3 py-1.5 border border-brand-700">
-              {gateName}
-            </span>
-          )}
-
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
-            scanning ? 'bg-yellow-500/20 text-yellow-300' : 'bg-green-500/20 text-green-300'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${scanning ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`} />
-            {scanning ? 'Reading...' : 'Ready'}
-          </div>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
+          scanning ? 'bg-yellow-500/20 text-yellow-300' : 'bg-green-500/20 text-green-300'
+        }`}>
+          <span className={`w-2 h-2 rounded-full ${scanning ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`} />
+          {scanning ? 'Reading...' : 'Ready'}
         </div>
-      </header>
+      </StationHeader>
 
       <input
         ref={inputRef}
@@ -106,7 +97,7 @@ export default function NFCStation() {
         readOnly={scanning}
       />
 
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         {noGate && (
           <div className="text-center">
             <AlertTriangle size={56} className="text-amber-400 mx-auto mb-4" />
@@ -117,50 +108,43 @@ export default function NFCStation() {
 
         {!noGate && !result && !scanning && (
           <div className="text-center animate-pulse">
-            <div className="w-40 h-40 bg-brand-800 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-brand-600">
-              <Wifi size={64} className="text-brand-400" />
+            <div className="w-32 h-32 sm:w-40 sm:h-40 bg-brand-800 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-brand-600">
+              <img src="/veriva-logo-white.svg" alt="" className="w-16 h-16 sm:w-20 sm:h-20 opacity-80" />
             </div>
-            <p className="text-white text-2xl font-semibold">Waiting for NFC Card</p>
+            <p className="text-white text-xl sm:text-2xl font-semibold">Waiting for Card</p>
             <p className="text-brand-400 text-sm mt-2">Ask the student to tap their card on the reader</p>
             <p className="text-brand-600 text-xs mt-1">Gate: {gateName}</p>
           </div>
         )}
 
-        {scanning && (
-          <div className="text-center">
-            <div className="w-40 h-40 bg-brand-800 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-yellow-500">
-              <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-            </div>
-            <p className="text-white text-2xl font-semibold">Verifying card...</p>
-          </div>
-        )}
+        {scanning && <LogoLoader tone="light" className="w-32 sm:w-40" />}
 
         {result && result.ok && student && (
           <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border-4 ${isEntry ? 'border-green-500' : 'border-blue-500'}`}>
-            <div className={`px-8 py-4 flex items-center gap-3 ${isEntry ? 'bg-green-500' : 'bg-blue-500'}`}>
+            <div className={`px-5 sm:px-8 py-4 flex items-center gap-3 ${isEntry ? 'bg-green-500' : 'bg-blue-500'}`}>
               {isEntry ? <DoorOpen size={28} className="text-white" /> : <ExitIcon size={28} className="text-white" />}
               <div>
-                <p className="text-white font-bold text-xl">
+                <p className="text-white font-bold text-lg sm:text-xl">
                   {isEntry ? 'Campus Entry Recorded' : 'Campus Exit Recorded'}
                 </p>
                 <p className="text-white/80 text-sm">
                   {result.entry?.gate_name ?? gateName} &middot; {new Date().toLocaleTimeString()}
                 </p>
               </div>
-              <CheckCircle size={32} className="text-white ml-auto" />
+              <SuccessTick tone="light" size={44} className="ml-auto" />
             </div>
 
-            <div className="bg-white px-8 py-8 flex items-center gap-8">
+            <div className="bg-white px-5 py-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 sm:gap-8 text-center sm:text-left">
               {student.photo_url ? (
-                <img src={student.photo_url} alt={student.full_name} className="w-36 h-36 rounded-2xl object-cover border-4 border-gray-100 shrink-0" />
+                <img src={student.photo_url} alt={student.full_name} className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover border-4 border-gray-100 shrink-0" />
               ) : (
-                <div className="w-36 h-36 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0 border-4 border-gray-100">
+                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0 border-4 border-gray-100">
                   <User size={56} className="text-brand-300" />
                 </div>
               )}
 
-              <div className="flex-1">
-                <h2 className="text-3xl font-bold text-gray-900 leading-tight">{student.full_name}</h2>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">{student.full_name}</h2>
                 <p className="text-brand-600 font-mono font-semibold text-lg mt-1">{student.registration_number}</p>
                 <div className="mt-3 space-y-1 text-gray-500 text-sm">
                   <p>{student.college_name}</p>
@@ -176,13 +160,13 @@ export default function NFCStation() {
             </div>
 
             {result.scan_method === 'serial' && (
-              <div className="bg-amber-50 px-8 py-3 flex items-center gap-2 text-amber-700 text-sm">
+              <div className="bg-amber-50 px-5 sm:px-8 py-3 flex items-center gap-2 text-amber-700 text-sm">
                 <AlertTriangle size={16} className="shrink-0" />
                 Confirm the photo of the student.
               </div>
             )}
 
-            <div className="bg-gray-50 px-8 py-3 text-center text-xs text-gray-400">
+            <div className="bg-gray-50 px-5 sm:px-8 py-3 text-center text-xs text-gray-400">
               Clearing in {AUTO_RESET_MS / 1000} seconds&hellip;
             </div>
           </div>
@@ -190,18 +174,18 @@ export default function NFCStation() {
 
         {result && !result.ok && (
           <div className="w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border-4 border-red-500">
-            <div className="bg-red-500 px-8 py-4 flex items-center gap-3">
+            <div className="bg-red-500 px-5 sm:px-8 py-4 flex items-center gap-3">
               <XCircle size={28} className="text-white" />
-              <p className="text-white font-bold text-xl">Access Denied</p>
+              <p className="text-white font-bold text-lg sm:text-xl">Access Denied</p>
             </div>
-            <div className="bg-white px-8 py-8 text-center">
+            <div className="bg-white px-5 py-6 sm:p-8 text-center">
               <AlertTriangle size={56} className="text-red-400 mx-auto mb-4" />
-              <p className="text-gray-800 text-xl font-semibold">{result.error}</p>
+              <p className="text-gray-800 text-lg sm:text-xl font-semibold">{result.error}</p>
               {result.status && (
                 <p className="text-gray-400 text-sm mt-2">Card status: <span className="font-medium capitalize">{result.status}</span></p>
               )}
             </div>
-            <div className="bg-gray-50 px-8 py-3 text-center text-xs text-gray-400">
+            <div className="bg-gray-50 px-5 sm:px-8 py-3 text-center text-xs text-gray-400">
               Clearing in {AUTO_RESET_MS / 1000} seconds&hellip;
             </div>
           </div>

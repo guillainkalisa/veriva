@@ -163,7 +163,7 @@ export default function Courses() {
             <div>
               <label className="label">Department *</label>
               {isAdmin ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <select className="input" value={college} onChange={(e) => onCollegeChange(e.target.value)}>
                     <option value="">College...</option>
                     {colleges.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}

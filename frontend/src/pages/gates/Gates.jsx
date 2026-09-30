@@ -111,7 +111,7 @@ export default function Gates() {
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title={selected ? 'Edit Gate' : 'Add Gate'}>
         <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Name *</label>
               <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required placeholder="e.g. Main Gate" />

@@ -82,7 +82,7 @@ def identify_student(value):
     card = NFCCard.objects.select_related('student').filter(NFCCard.scan_filter(value)).first()
     if card:
         if not card.is_active:
-            raise PermissionDenied(f'This NFC card is {card.get_status_display().lower()}.')
+            raise PermissionDenied(f'This card is {card.get_status_display().lower()}.')
         return card.student, card.scan_method(value)
 
     student = Student.objects.filter(registration_number=value.upper()).first()

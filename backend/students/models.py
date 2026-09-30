@@ -169,7 +169,7 @@ class NFCCard(models.Model):
         ]
 
     def __str__(self):
-        return f'NFC Card [{self.uid}] - {self.student.full_name}'
+        return f'Card [{self.uid}] - {self.student.full_name}'
 
     def deactivate(self, reason=''):
         self.status = self.STATUS_INACTIVE

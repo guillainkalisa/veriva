@@ -87,7 +87,7 @@ class AttendanceRecord(models.Model):
     METHOD_NFC = 'nfc'
     METHOD_MANUAL = 'manual'
     METHOD_CHOICES = [
-        (METHOD_NFC, 'NFC Card'),
+        (METHOD_NFC, 'Card'),
         (METHOD_MANUAL, 'Manual Entry'),
     ]
 

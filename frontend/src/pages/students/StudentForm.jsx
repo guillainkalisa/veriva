@@ -95,7 +95,7 @@ export default function StudentForm({ student, onSuccess }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Full Name *</label>
           <input className="input" value={form.full_name} onChange={(e) => setField('full_name', e.target.value)} required />
@@ -107,7 +107,7 @@ export default function StudentForm({ student, onSuccess }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Email *</label>
           <input className="input" type="email" value={form.email} onChange={(e) => setField('email', e.target.value)} required />
@@ -118,7 +118,7 @@ export default function StudentForm({ student, onSuccess }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select label="College" value={form.college} onChange={onCollegeChange}
           options={colleges} placeholder="Select college..." />
         <Select label="School" value={form.school} onChange={onSchoolChange}

@@ -56,8 +56,9 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
 
-      {/* Full-screen NFC station — no sidebar */}
-      <Route path="/nfc-station" element={
+      {/* Full-screen card station — no sidebar */}
+      <Route path="/nfc-station" element={<Navigate to="/card-station" replace />} />
+      <Route path="/card-station" element={
         <RequireAuth>
           <RequireRole roles={['admin', 'security']}>
             <NFCStation />

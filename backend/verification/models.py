@@ -16,7 +16,7 @@ class IncidentReport(models.Model):
 
     TYPE_CHOICES = [
         (TYPE_DEVICE_MISMATCH, 'Device Ownership Mismatch'),
-        (TYPE_CARD_SHARING, 'NFC Card Sharing Attempt'),
+        (TYPE_CARD_SHARING, 'Card Sharing Attempt'),
         (TYPE_UNAUTHORIZED_ENTRY, 'Unauthorized Campus Entry'),
         (TYPE_STOLEN_DEVICE, 'Stolen Device Report'),
         (TYPE_STRANGER, 'Unregistered Person on Campus'),

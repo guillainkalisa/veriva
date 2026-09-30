@@ -62,7 +62,7 @@ export default function DeviceForm({ device, onSuccess }) {
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Brand *</label>
           <input className="input" value={form.brand} onChange={(e) => set('brand', e.target.value)} required placeholder="e.g. HP, Dell, Lenovo" />
@@ -73,7 +73,7 @@ export default function DeviceForm({ device, onSuccess }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Serial Number *</label>
           <input className="input font-mono" value={form.serial_number} onChange={(e) => set('serial_number', e.target.value)} required placeholder="Device serial number" />

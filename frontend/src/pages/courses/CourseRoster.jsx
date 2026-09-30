@@ -76,7 +76,7 @@ export default function CourseRoster({ course }) {
         {candidates.length > 0 && (
           <div className="mt-2 border border-gray-100 rounded-lg divide-y divide-gray-50 max-h-40 overflow-y-auto">
             {candidates.map((s) => (
-              <label key={s.id} className="flex items-center gap-3 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50">
+              <label key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50">
                 <input type="checkbox" checked={selected.includes(s.id)} onChange={() => toggleSelect(s.id)} />
                 <span className="font-medium text-gray-800">{s.full_name}</span>
                 <span className="font-mono text-xs text-gray-400">{s.registration_number}</span>
@@ -102,38 +102,40 @@ export default function CourseRoster({ course }) {
             <p className="text-sm">No students enrolled yet.</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 uppercase">
-                <th className="text-left pb-2">Student</th>
-                <th className="text-left pb-2">Attendance</th>
-                <th className="text-left pb-2">Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {roster.map((r) => (
-                <tr key={r.student.id}>
-                  <td className="py-2">
-                    <p className="font-medium text-gray-800">{r.student.full_name}</p>
-                    <p className="font-mono text-xs text-gray-400">{r.student.registration_number}</p>
-                  </td>
-                  <td className="py-2 text-gray-600">{r.percent}%</td>
-                  <td className="py-2">
-                    <span className={r.eligible ? 'badge-green' : 'badge-red'}>
-                      {r.eligible ? 'Eligible' : 'At risk'}
-                    </span>
-                  </td>
-                  <td className="py-2 text-right">
-                    <button disabled={busy} onClick={() => handleUnenroll(r.student.id)}
-                      className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500">
-                      <UserMinus size={14} />
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm [&_th]:pr-4 [&_td]:pr-4">
+              <thead>
+                <tr className="text-xs text-gray-400 uppercase">
+                  <th className="text-left pb-2">Student</th>
+                  <th className="text-left pb-2">Attendance</th>
+                  <th className="text-left pb-2">Status</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {roster.map((r) => (
+                  <tr key={r.student.id}>
+                    <td className="py-2">
+                      <p className="font-medium text-gray-800">{r.student.full_name}</p>
+                      <p className="font-mono text-xs text-gray-400">{r.student.registration_number}</p>
+                    </td>
+                    <td className="py-2 text-gray-600">{r.percent}%</td>
+                    <td className="py-2">
+                      <span className={r.eligible ? 'badge-green' : 'badge-red'}>
+                        {r.eligible ? 'Eligible' : 'At risk'}
+                      </span>
+                    </td>
+                    <td className="py-2 text-right">
+                      <button disabled={busy} onClick={() => handleUnenroll(r.student.id)}
+                        className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500">
+                        <UserMinus size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

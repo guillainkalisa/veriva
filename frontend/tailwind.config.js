@@ -22,6 +22,19 @@ export default {
           from: { opacity: 0, transform: 'translateY(2px)' },
           to: { opacity: 1, transform: 'translateY(0)' },
         },
+        pageIn: {
+          from: { opacity: 0, transform: 'translateY(8px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        sheetIn: {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
+        tickHalo: {
+          '0%': { opacity: 0, transform: 'scale(0.8)' },
+          '15%': { opacity: 0.35 },
+          '100%': { opacity: 0, transform: 'scale(1.9)' },
+        },
         riseIn: {
           from: { opacity: 0, transform: 'translateY(6px)' },
           to: { opacity: 1, transform: 'translateY(0)' },
@@ -31,9 +44,15 @@ export default {
           to: { backgroundPosition: '-200% 0' },
         },
       },
+      transitionTimingFunction: {
+        ios: 'cubic-bezier(0.32, 0.72, 0, 1)',
+      },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'rise-in': 'riseIn 0.6s ease-out both',
+        'tick-halo': 'tickHalo 0.9s ease-out 0.75s both',
+        'sheet-in': 'sheetIn 0.45s cubic-bezier(0.32, 0.72, 0, 1) backwards',
+        'page-in': 'pageIn 0.45s cubic-bezier(0.32, 0.72, 0, 1) backwards',
         shimmer: 'shimmer 2.4s linear infinite',
       },
     },

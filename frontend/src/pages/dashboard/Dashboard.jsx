@@ -36,7 +36,7 @@ export default function Dashboard() {
         <LoadingState />
       ) : (
         <div className="animate-fade-in">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
             {s.students && (
               <StatCard label="Total Students" value={s.students.total} icon={Users} color="blue"
                 sub={`${s.students.active} active`} />
@@ -67,15 +67,15 @@ export default function Dashboard() {
           </div>
 
           {isLecturer && s.eligibility && (
-            <div className="card p-6 mb-8">
+            <div className="card p-4 sm:p-6 mb-6 sm:mb-8">
               <h3 className="font-semibold text-gray-900 mb-4">Exam Eligibility — Students At Risk</h3>
               {s.eligibility.at_risk.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-6">Everyone's meeting their attendance threshold.</p>
               ) : (
                 <div className="space-y-3">
                   {s.eligibility.at_risk.map((row, i) => (
-                    <div key={i} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                      <div>
+                    <div key={i} className="flex items-center justify-between gap-3 py-3 border-b border-gray-50 last:border-0">
+                      <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900">{row.student_name}</p>
                         <p className="text-xs text-gray-400 mt-0.5 font-mono">{row.registration_number}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{row.course_code} &middot; needs {row.required_percent}%</p>
@@ -89,15 +89,15 @@ export default function Dashboard() {
           )}
 
           {canManageIncidents && (
-            <div className="card p-6">
+            <div className="card p-4 sm:p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Recent Unresolved Incidents</h3>
               {incidents.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-6">No unresolved incidents</p>
               ) : (
                 <div className="space-y-3">
                   {incidents.map((inc) => (
-                    <div key={inc.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                      <div>
+                    <div key={inc.id} className="flex items-center justify-between gap-3 py-3 border-b border-gray-50 last:border-0">
+                      <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900">{inc.type_display}</p>
                         <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{inc.description}</p>
                       </div>

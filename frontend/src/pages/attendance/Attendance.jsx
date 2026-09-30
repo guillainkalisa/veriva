@@ -91,11 +91,11 @@ export default function Attendance() {
           {sessions.map((s) => (
             <div key={s.id} className="card overflow-hidden">
               <div
-                className="p-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                className="p-4 flex items-center gap-3 sm:gap-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
                 onClick={() => toggleExpand(s.id)}
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="font-semibold text-gray-900">{s.course_code}</span>
                     <span className="text-gray-500 text-sm">{s.course_name}</span>
                     <span className={s.is_open ? 'badge-green' : 'badge-gray'}>
@@ -127,38 +127,40 @@ export default function Attendance() {
                   ) : records[s.id].length === 0 ? (
                     <p className="text-sm text-gray-400 text-center py-4">No attendance records yet.</p>
                   ) : (
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-xs text-gray-400 uppercase">
-                          <th className="text-left pb-2">Student</th>
-                          <th className="text-left pb-2">Reg. Number</th>
-                          <th className="text-left pb-2">Check-in</th>
-                          {s.track_mode === 'double' && <th className="text-left pb-2">Check-out</th>}
-                          <th className="text-left pb-2">Counted</th>
-                          <th className="text-left pb-2">Method</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {records[s.id].map((r) => (
-                          <tr key={r.id}>
-                            <td className="py-2 font-medium text-gray-800">{r.student_detail?.full_name}</td>
-                            <td className="py-2 font-mono text-xs text-gray-500">{r.student_detail?.registration_number}</td>
-                            <td className="py-2 text-xs text-gray-500">{new Date(r.check_in_time).toLocaleTimeString()}</td>
-                            {s.track_mode === 'double' && (
-                              <td className="py-2 text-xs text-gray-500">
-                                {r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString() : '—'}
-                              </td>
-                            )}
-                            <td className="py-2 text-xs text-gray-500">
-                              {s.is_open ? '—' : `${r.counted_minutes} min`}
-                            </td>
-                            <td className="py-2">
-                              <span className={r.method === 'nfc' ? 'badge-blue' : 'badge-gray'}>{r.method}</span>
-                            </td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm [&_th]:pr-4 [&_td]:pr-4">
+                        <thead>
+                          <tr className="text-xs text-gray-400 uppercase">
+                            <th className="text-left pb-2">Student</th>
+                            <th className="text-left pb-2">Reg. Number</th>
+                            <th className="text-left pb-2">Check-in</th>
+                            {s.track_mode === 'double' && <th className="text-left pb-2">Check-out</th>}
+                            <th className="text-left pb-2">Counted</th>
+                            <th className="text-left pb-2">Method</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {records[s.id].map((r) => (
+                            <tr key={r.id}>
+                              <td className="py-2 font-medium text-gray-800">{r.student_detail?.full_name}</td>
+                              <td className="py-2 font-mono text-xs text-gray-500">{r.student_detail?.registration_number}</td>
+                              <td className="py-2 text-xs text-gray-500">{new Date(r.check_in_time).toLocaleTimeString()}</td>
+                              {s.track_mode === 'double' && (
+                                <td className="py-2 text-xs text-gray-500">
+                                  {r.check_out_time ? new Date(r.check_out_time).toLocaleTimeString() : '—'}
+                                </td>
+                              )}
+                              <td className="py-2 text-xs text-gray-500">
+                                {s.is_open ? '—' : `${r.counted_minutes} min`}
+                              </td>
+                              <td className="py-2">
+                                <span className={r.method === 'nfc' ? 'badge-blue' : 'badge-gray'}>{r.method}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               )}
@@ -176,7 +178,7 @@ export default function Attendance() {
               {courses.map((c) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Date *</label>
               <input className="input" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
